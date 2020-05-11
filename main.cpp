@@ -40,6 +40,7 @@ int main(int argc, char **argv)
 #endif
 {
 	pLog = Logger::GetLogger("main");
+	Logger::GetProperties()->AutoPrefixEnable(true);
 	// This is enabled by default in debug builds
 	#ifndef DEBUG
 	Logger::AddSink(new LogConsoleSink,"console");
@@ -61,6 +62,13 @@ int main(int argc, char **argv)
 	}
 	// Should be on the previous indentdation level
 	pLog->Debug("Done!");
+
+
+	gnilk::ILogger *logger2 = gnilk::Logger::GetLogger("function","myclass");
+	logger2->Debug("With prefix");
+
+	gnilk::ILogger *logger3 = gnilk::Logger::GetLogger("myclass::function");
+	logger3->Debug("With prefix 2");
 
 	//testRollingAppender();
 

@@ -925,6 +925,14 @@ void Logger::WriteReportString(int mc, MsgBuffer *pBuf)
 #ifdef WIN32
 	DWORD tid = 0;
 	tid = GetCurrentThreadId();
+#else	
+	uint32_t tid;
+	void *p_thread = NULL;	
+	#ifdef LOGGER_HAVE_PTHREADS
+	p_thread = pthread_self();	
+	#endif
+	tid = (uint64_t)(p_thread) & 0xffffffff;
+#endif
 	if (this->sPrefix == NULL) {
 	    if (IsAutoPrefixEnabled()) {
             snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x::                ] %8s %32s - %s", sTime, tid, sLevel, sName, sIndent);
@@ -934,11 +942,7 @@ void Logger::WriteReportString(int mc, MsgBuffer *pBuf)
 	} else {
         snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x::%16s] %8s %32s - %s", sTime, tid, sPrefix, sLevel, sName, sIndent);
 	}
-#else
-	void *tid = NULL;	
-	//tid = pthread_self();	
-	snprintf(sHdr, MAX_INDENT + 64, "%s [%p] %8s %32s - %s", sTime, tid, sLevel, sName, sIndent);
-#endif
+	
 	Logger::SendToSinks((int)mc,sHdr, string);
 }
 
