@@ -8,7 +8,7 @@ Intended use is in smaller projects. The logger has been used in quite big proje
 and was added quite late I would not recommend you to use it. It has been used in massive threaded projects with good results but it's a
 new feature so take it for what it is.
 
-NOTE: This BSD license
+NOTE: This is BSD license
 
 ## Use like
 ```C++
