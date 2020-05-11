@@ -40,6 +40,10 @@ int main(int argc, char **argv)
 #endif
 {
 	pLog = Logger::GetLogger("main");
+	// This is enabled by default in debug builds
+	#ifndef DEBUG
+	Logger::AddSink(new LogConsoleSink,"console");
+	#endif	
 
 	pLog->Debug("Testing debug: %s", "hello world");
 	pLog->Info("Testing info: %d", 1);
@@ -58,7 +62,7 @@ int main(int argc, char **argv)
 	// Should be on the previous indentdation level
 	pLog->Debug("Done!");
 
-	testRollingAppender();
+	//testRollingAppender();
 
 
 
