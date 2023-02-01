@@ -6,9 +6,10 @@
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_OSX_ARCHITECTURES x86_64)
+set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "")
 set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 cmake_minimum_required(VERSION 2.8)
+
 
 option(LOGGER_HAVE_NEWLINE "Append newline to strings" ON)
 option(LOGGER_HAVE_PTHREADS "Thread saftey" ON)
@@ -41,6 +42,7 @@ include_directories("${PROJECT_SOURCE_DIR}")
 #
 list(APPEND src_logger src/logger.cpp)
 add_library(logger STATIC ${src_logger})
+target_include_directories(logger PUBLIC ${CMAKE_SOURCE_DIR})
 
 if(LOGGER_HAVE_NEWLINE) 
 target_compile_definitions(logger PUBLIC LOGGER_HAVE_NEWLINE)
@@ -50,6 +52,11 @@ target_compile_definitions(logger PUBLIC LOGGER_HAVE_PTHREADS)
 endif()
 if(LOGGER_HAVE_SERIAL) 
 target_compile_definitions(logger PUBLIC LOGGER_HAVE_SERIAL)
+endif()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Building debug mode....")
+    target_compile_definitions(logger PUBLIC DEBUG)
 endif()
 
 set_property(TARGET logger PROPERTY CXX_STANDARD 11)
