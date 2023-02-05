@@ -239,7 +239,9 @@ void LogFileSink::ParseArgs(int argc, char **argv)
 		if (!strcmp(argv[i],"file"))
 		{
 			this->properties.SetValue(LOG_CONF_LOGFILE, argv[++i]);
-		}
+		} else if (!strcmp(argv[i], "autoflush")) {
+            autoflush = true;
+        }
 	}	
 }
 void LogFileSink::Initialize(int argc, char **argv)
@@ -319,7 +321,9 @@ int LogFileSink::WriteLine(int dbgLevel, char *hdr, char *string)
 				//Serial.printf("LogFileSink::WriteLine, ERROR: %d\n", res);
 				#endif
 				res = SINK_WRITE_IO_ERROR;
-			}
+			} else if (autoflush) {
+                fflush(fOut);
+            }
 		}
 	} else {
 		#ifdef DEBUG

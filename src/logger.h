@@ -219,6 +219,8 @@ namespace gnilk
 		virtual void Flush();
 
 		static ILogOutputSink * LOG_CALLCONV CreateInstance();
+    private:
+        bool autoflush = false;
 	};	
 
 	class LogRollingFileSink : public LogFileSink
