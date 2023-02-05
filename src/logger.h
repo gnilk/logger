@@ -296,7 +296,6 @@ namespace gnilk
 		static std::queue<void *> buffers;
 		static char *TimeString(int maxchar, char *dst);
 		static void SendToSinks(int dbgLevel, char *hdr, char *string);
-		static void Initialize();
 		static ILogOutputSink *CreateSink(const char *className);
 		static void RebuildSinksFromConfiguration();
 		static ILogger *GetLoggerFromName(const char *name);
@@ -311,6 +310,7 @@ namespace gnilk
 	public:
 	
 		virtual ~Logger();
+        static void Initialize();   // Call this first..
 		static ILogger *GetLogger(const char *name, const char *prefix = NULL);
 		static void CloseAll();
 		static void SetAllSinkDebugLevel(int iNewDebugLevel);

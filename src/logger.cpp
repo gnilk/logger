@@ -767,7 +767,7 @@ bool Logger::RemoveSink(const char *sName) {
 // Create sink's based on class name and factory instances in the global list
 //
 ILogOutputSink *Logger::CreateSink(const char *className)
-{	
+{
 	for(int i=0;sinkFactoryList[i].factory!=NULL;i++) {
 		if (sinkFactoryList[i].name == className) {
 			return sinkFactoryList[i].factory();			
