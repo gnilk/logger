@@ -751,6 +751,18 @@ void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, char **
 	AddSink(pSink, sName);
 }
 
+bool Logger::RemoveSink(const char *sName) {
+    auto cbCheckSink = [sName](ILogOutputSink *sink) -> bool {
+        if (!strcmp(sName, sink->GetName())) {
+            return true;
+        }
+        return false;
+    };
+    auto szBefore = sinks.size();
+    sinks.erase(std::remove_if(sinks.begin(), sinks.end(), cbCheckSink));
+    return (szBefore != sinks.size());
+}
+
 //
 // Create sink's based on class name and factory instances in the global list
 //

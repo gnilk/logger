@@ -316,6 +316,7 @@ namespace gnilk
 		static void SetAllSinkDebugLevel(int iNewDebugLevel);
 		static void AddSink(ILogOutputSink *pSink, const char *sName);
 		static void AddSink(ILogOutputSink *pSink, const char *sName, int argc, char **argv);
+        static bool RemoveSink(const char *sName);
 
 		// Refactor this to a LogManager
 		static void *RequestBuffer();
