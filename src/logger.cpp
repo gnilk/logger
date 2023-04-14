@@ -101,6 +101,7 @@
 
 #include <list>
 #include <map>
+#include <algorithm>
 
 
 #include "logger.h"
@@ -559,7 +560,7 @@ char *Logger::TimeString(int maxchar, char *dst)
 				struct tm *gmt = gmtime(&bla);
 				snprintf(dst,maxchar,"%.2d.%.2d.%.4d %.2d:%.2d:%.2d.%.3d",
 						 gmt->tm_mday,gmt->tm_mon+1,gmt->tm_year+1900, 
-						 gmt->tm_hour,gmt->tm_min,gmt->tm_sec,tmv.tv_usec/1000);
+						 gmt->tm_hour,gmt->tm_min,gmt->tm_sec,(int)tmv.tv_usec/1000);
 			}
 			break;
 			
@@ -945,7 +946,7 @@ void Logger::WriteReportString(int mc, MsgBuffer *pBuf)
 	uint32_t tid;
 	void *p_thread = NULL;	
 	#ifdef LOGGER_HAVE_PTHREADS
-	p_thread = pthread_self();	
+	p_thread = (void *)pthread_self();
 	#endif
 	tid = (uint64_t)(p_thread) & 0xffffffff;
 #endif
