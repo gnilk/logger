@@ -148,7 +148,7 @@ namespace gnilk
 //
 
 #ifdef LOGGER_HAVE_SERIAL
-void LogSerialSink::Initialize(int argc, char **argv) {
+void LogSerialSink::Initialize(int argc, const char **argv) {
 
 }
 int LogSerialSink::WriteLine(int dbgLevel, char *hdr, char *string) {
@@ -182,7 +182,7 @@ ILogOutputSink *LogConsoleSink::CreateInstance()
 	return (ILogOutputSink *)(new LogConsoleSink());
 }
 
-void LogConsoleSink::Initialize(int argc, char **argv)
+void LogConsoleSink::Initialize(int argc, const char **argv)
 {
 	// Do stuff here
 	int i;
@@ -231,7 +231,7 @@ ILogOutputSink *LogFileSink::CreateInstance()
 	return (ILogOutputSink *)(new LogFileSink());
 }
 
-void LogFileSink::ParseArgs(int argc, char **argv)
+void LogFileSink::ParseArgs(int argc, const char **argv)
 {
 	int i;
 	
@@ -245,7 +245,7 @@ void LogFileSink::ParseArgs(int argc, char **argv)
         }
 	}	
 }
-void LogFileSink::Initialize(int argc, char **argv)
+void LogFileSink::Initialize(int argc, const char **argv)
 {
 	ParseArgs(argc, argv);
 	Open(properties.GetLogfileName(), false);
@@ -432,7 +432,7 @@ void LogRollingFileSink::CheckApplyRules()
 	}
 }
 
-void LogRollingFileSink::Initialize(int argc, char **argv)
+void LogRollingFileSink::Initialize(int argc, const char **argv)
 {
 	// ..This is not directly correct..
 	//LogFileSink::Initialize(argc, argv);
@@ -750,7 +750,7 @@ void Logger::AddSink(ILogOutputSink *pSink, const char *sName)
 	sinks.push_back(pSink);
 }
 // With initialization
-void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, char **argv)
+void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, const char **argv)
 {
 	pSink->Initialize(argc, argv);
 	AddSink(pSink, sName);

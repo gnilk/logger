@@ -8,7 +8,7 @@
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "")
 set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
 
 option(LOGGER_HAVE_NEWLINE "Append newline to strings" ON)

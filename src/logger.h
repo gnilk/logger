@@ -127,9 +127,9 @@ namespace gnilk
 		__inline const char *GetLogfileName() { return logFileName; };
 		void SetLogfileName(const char *newName);
 
-		__inline const long GetMaxLogfileSize() { return nMaxLogfileSize; };
+		__inline long GetMaxLogfileSize() { return nMaxLogfileSize; };
 		__inline void SetMaxLogfileSize(const long nSize) { nMaxLogfileSize = nSize; };
-		__inline const int GetMaxBackupIndex() { return nMaxBackupIndex; };
+		__inline int GetMaxBackupIndex() { return nMaxBackupIndex; };
 		__inline void SetMaxBackupIndex(const int nIndex) { nMaxBackupIndex = nIndex; }; 
 
 
@@ -159,7 +159,7 @@ namespace gnilk
 	public:
 		virtual ~ILogOutputSink() {}
 		virtual const char *GetName() = 0;
-		virtual void Initialize(int argc, char **argv) = 0;
+		virtual void Initialize(int argc, const char **argv) = 0;
 		virtual int WriteLine(int dbgLevel, char *hdr, char *string) = 0;
 		virtual void Flush() = 0;
 		virtual void Close() = 0;
@@ -174,19 +174,20 @@ namespace gnilk
 		LogProperties *GetProperties() { return &properties; }
 	public:
 		virtual ~LogBaseSink() {}
-		virtual void SetName(const char *name) { properties.SetName(name); }
-		virtual const char *GetName() { return properties.GetName(); }
-		virtual void Initialize(int argc, char **argv) = 0;
-		virtual int WriteLine(int dbgLevel, char *hdr, char *string) = 0;
-		virtual void Close() = 0;
-		virtual void Flush() {}
+		void SetName(const char *name) { properties.SetName(name); }
+		const char *GetName() override { return properties.GetName(); }
+
+		virtual void Initialize(int argc, const char **argv) override = 0;
+		virtual int WriteLine(int dbgLevel, char *hdr, char *string) override = 0;
+		virtual void Close() override = 0;
+		virtual void Flush() override {}
 	};
 	class LogConsoleSink : 	public LogBaseSink
 	{
 	public:
-		virtual void Initialize(int argc, char **argv);
-		virtual int WriteLine(int dbgLevel, char *hdr, char *string);
-		virtual void Close();
+		void Initialize(int argc, const char **argv) override;
+		int WriteLine(int dbgLevel, char *hdr, char *string) override;
+		void Close() override;
 
 		static ILogOutputSink * LOG_CALLCONV CreateInstance();
 	};
@@ -194,9 +195,9 @@ namespace gnilk
 	class LogSerialSink : public LogBaseSink
 	{
 	public:
-		virtual void Initialize(int argc, char **argv);
-		virtual int WriteLine(int dbgLevel, char *hdr, char *string);
-		virtual void Close();
+		void Initialize(int argc, const char **argv) override;
+		int WriteLine(int dbgLevel, char *hdr, char *string) override;
+		void Close() override;
 		static ILogOutputSink * LOG_CALLCONV CreateInstance();
 	};
 	#endif
@@ -209,14 +210,14 @@ namespace gnilk
 
 		void Open(const char *filename, bool bAppend);
 		long Size();
-		void ParseArgs(int argc, char **argv);
+		void ParseArgs(int argc, const char **argv);
 	public:
 		LogFileSink();
 		virtual ~LogFileSink();
-		virtual void Initialize(int argc, char **argv);
-		virtual int WriteLine(int dbgLevel, char *hdr, char *string);
-		virtual void Close();
-		virtual void Flush();
+		void Initialize(int argc, const char **argv) override;
+		int WriteLine(int dbgLevel, char *hdr, char *string) override;
+		void Close() override;
+		void Flush() override;
 
 		static ILogOutputSink * LOG_CALLCONV CreateInstance();
     private:
@@ -236,8 +237,8 @@ namespace gnilk
 	public:
 		LogRollingFileSink();
 		virtual ~LogRollingFileSink();
-		virtual void Initialize(int argc, char **argv);
-		virtual int WriteLine(int dbgLevel, char *hdr, char *string);
+		void Initialize(int argc, const char **argv) override;
+		int WriteLine(int dbgLevel, char *hdr, char *string) override;
 
 		static ILogOutputSink * LOG_CALLCONV CreateInstance();
 	};
@@ -317,7 +318,7 @@ namespace gnilk
 		static void CloseAll();
 		static void SetAllSinkDebugLevel(int iNewDebugLevel);
 		static void AddSink(ILogOutputSink *pSink, const char *sName);
-		static void AddSink(ILogOutputSink *pSink, const char *sName, int argc, char **argv);
+		static void AddSink(ILogOutputSink *pSink, const char *sName, int argc, const char **argv);
         static bool RemoveSink(const char *sName);
 
 		// Refactor this to a LogManager
