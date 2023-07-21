@@ -627,7 +627,16 @@ void Logger::DisableAllLoggers() {
     for (auto &logger: loggers) {
         logger->pLogger->SetEnabled(false);
     }
+    properties.EnableOnCreate(false);
 }
+void Logger::EnableAllLoggers() {
+    for (auto &logger: loggers) {
+        logger->pLogger->SetEnabled(true);
+    }
+    properties.EnableOnCreate(true);
+
+}
+
 
 
 //
@@ -819,7 +828,7 @@ void Logger::Initialize() {
 // Regular functions
 
 Logger::Logger(const char *sName, const char *sPrefix) {
-    this->isEnabled = true;
+    this->isEnabled = Logger::properties.IsEnabledOnCreate();
     this->sName = strdup(sName);
     if (sPrefix != NULL) {
         this->sPrefix = strdup(sPrefix);
