@@ -174,7 +174,7 @@ namespace gnilk
 		LogProperties *GetProperties() { return &properties; }
 	public:
 		virtual ~LogBaseSink() {}
-		void SetName(const char *name) { properties.SetName(name); }
+		void SetName(const char *newName) { properties.SetName(newName); }
 		const char *GetName() override { return properties.GetName(); }
 
 		virtual void Initialize(int argc, const char **argv) override = 0;
