@@ -441,6 +441,8 @@ int LogRollingFileSink::WriteLine(int dbgLevel, char *hdr, char *string) {
 int Logger::iIndentStep = 2;
 bool Logger::bInitialized = false;
 std::queue<void *> Logger::buffers;
+std::map<std::string, bool> Logger::enabledLoggers;
+
 ILoggerList Logger::loggers;
 ILoggerSinkList Logger::sinks;
 Logger::TimeFormat Logger::kTimeFormat = kTFLog4Net;
@@ -608,6 +610,11 @@ ILogger *Logger::GetLoggerFromNameWithPrefix(const char *name, const char *prefi
 }
 
 void Logger::DisableLogger(const char *name) {
+    // In case the Disable is called before the logger is created
+    // we need to store that so when the logger is created we can disable it...
+    enabledLoggers[std::string(name)] = false;
+
+    // Now disable any created
     auto logger = GetLoggerFromName(name);
     if (logger == nullptr) {
         return;
@@ -616,6 +623,9 @@ void Logger::DisableLogger(const char *name) {
 }
 
 void Logger::EnableLogger(const char *name) {
+    enabledLoggers[std::string(name)] = true;
+
+    // Enable that specific logger...
     auto logger = GetLoggerFromName(name);
     if (logger == nullptr) {
         return;
@@ -624,14 +634,24 @@ void Logger::EnableLogger(const char *name) {
 }
 
 void Logger::DisableAllLoggers() {
+    // All active loggers
     for (auto &logger: loggers) {
         logger->pLogger->SetEnabled(false);
     }
+    // Some might have been tagged for enabled when created - we need to disable them as well
+    for (auto it = enabledLoggers.begin(); it != enabledLoggers.end(); ++it) {
+        it->second = false;
+    }
+
     properties.EnableOnCreate(false);
 }
 void Logger::EnableAllLoggers() {
     for (auto &logger: loggers) {
         logger->pLogger->SetEnabled(true);
+    }
+    // Some might have been tagged for disable when created - we need to enable them as well
+    for (auto it = enabledLoggers.begin(); it != enabledLoggers.end(); ++it) {
+        it->second = true;
     }
     properties.EnableOnCreate(true);
 
@@ -829,6 +849,11 @@ void Logger::Initialize() {
 
 Logger::Logger(const char *sName, const char *sPrefix) {
     this->isEnabled = Logger::properties.IsEnabledOnCreate();
+    // We have disabled (or enabled) on create - but there are overrides - so let's fix that...
+    if (enabledLoggers.find(std::string(sName)) != enabledLoggers.end()) {
+        this->isEnabled = enabledLoggers[std::string(sName)];
+    }
+
     this->sName = strdup(sName);
     if (sPrefix != NULL) {
         this->sPrefix = strdup(sPrefix);

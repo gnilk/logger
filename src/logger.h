@@ -353,7 +353,15 @@ namespace gnilk
         void WriteReportString(int mc, gnilk::MsgBuffer *pBuf);
         void GenerateIndentString();
 
-        // Create properties
+	private:
+		static char *TimeString(int maxchar, char *dst);
+		static void SendToSinks(int dbgLevel, char *hdr, char *string);
+		static ILogOutputSink *CreateSink(const char *className);
+		static void RebuildSinksFromConfiguration();
+		static ILogger *GetLoggerFromName(const char *name);
+		static ILogger *GetLoggerFromNameWithPrefix(const char *name, const char *prefix);
+
+		// Create properties
     private:
         static TimeFormat kTimeFormat;
         static bool bInitialized;
@@ -362,12 +370,7 @@ namespace gnilk
         static ILoggerSinkList sinks;
         static LogProperties properties;
         static std::queue<void *> buffers;
-        static char *TimeString(int maxchar, char *dst);
-        static void SendToSinks(int dbgLevel, char *hdr, char *string);
-        static ILogOutputSink *CreateSink(const char *className);
-        static void RebuildSinksFromConfiguration();
-        static ILogger *GetLoggerFromName(const char *name);
-        static ILogger *GetLoggerFromNameWithPrefix(const char *name, const char *prefix);
+		static std::map<std::string, bool> enabledLoggers;
 
 #ifdef WIN32
         static CRITICAL_SECTION bufferLock;
