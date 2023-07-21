@@ -95,8 +95,10 @@
 #define vsnprintf _vsnprintf
 
 #else
+
 #include <pthread.h>
 #include <sys/time.h>
+
 #endif
 
 #include <list>
@@ -107,7 +109,7 @@
 #include "logger_internal.h"
 
 
-#define DEFAULT_DEBUG_LEVEL 0		// used by constructors, default is output everything
+#define DEFAULT_DEBUG_LEVEL 0        // used by constructors, default is output everything
 #define DEFAULT_SINK_NAME ("")
 #define DEFAULT_LOGFILE_NAME ("logfile")
 #define DEFAULT_BUFFER_SIZE 4096
@@ -115,28 +117,27 @@
 //#define DEBUG 1
 
 using namespace std;
+using namespace gnilk;
 
-namespace gnilk 
-{
-	static int StrExplode(std::vector<std::string> *strList, char *mString, int chrSplit);
-	static char *StrTrim(char *s);
-	extern "C" {
-		ILogOutputSink * LOG_CALLCONV CreateSink(const char *className) {
-			return NULL;
-		}
-	}
+static int StrExplode(std::vector<std::string> *strList, char *mString, int chrSplit);
+static char *StrTrim(char *s);
+extern "C" {
+ILogOutputSink *LOG_CALLCONV CreateSink(const char *className) {
+    return NULL;
+}
+}
 
-	// Loggers currently available
-	static LOG_SINK_FACTORY sinkFactoryList[] =
-	{
-		"LogConsoleSink", LogConsoleSink::CreateInstance,
-		"LogRollingFileSink", LogRollingFileSink::CreateInstance,
-		"LogFileSink", LogFileSink::CreateInstance,
-#if defined(LOGGER_HAVE_SERIAL)		
-		"LogSerialSink", LogSerialSink::CreateInstance,
-#endif		
-		"", NULL,
-	};
+// Loggers currently available
+static LOG_SINK_FACTORY sinkFactoryList[] =
+        {
+                "LogConsoleSink", LogConsoleSink::CreateInstance,
+                "LogRollingFileSink", LogRollingFileSink::CreateInstance,
+                "LogFileSink", LogFileSink::CreateInstance,
+#if defined(LOGGER_HAVE_SERIAL)
+                "LogSerialSink", LogSerialSink::CreateInstance,
+#endif
+                "", NULL,
+        };
 
 
 
@@ -151,24 +152,24 @@ void LogSerialSink::Initialize(int argc, const char **argv) {
 
 }
 int LogSerialSink::WriteLine(int dbgLevel, char *hdr, char *string) {
-	int res = SINK_WRITE_FILTERED;
-	if (WithinRange(dbgLevel))
-	{
-		res = (int)Serial.print(hdr);
-		res += (int)Serial.print(string);
-		// res = fprintf(stdout, "%s%s\n", hdr,string);
-		// if (res < 0) {
-		// 	res = SINK_WRITE_IO_ERROR;
-		// }
-	}
-	return res;
+    int res = SINK_WRITE_FILTERED;
+    if (WithinRange(dbgLevel))
+    {
+        res = (int)Serial.print(hdr);
+        res += (int)Serial.print(string);
+        // res = fprintf(stdout, "%s%s\n", hdr,string);
+        // if (res < 0) {
+        // 	res = SINK_WRITE_IO_ERROR;
+        // }
+    }
+    return res;
 }
 void LogSerialSink::Close() {
-	// nothing 
+    // nothing
 }
 
 ILogOutputSink * LOG_CALLCONV LogSerialSink::CreateInstance() {
-	return (ILogOutputSink *)(new LogSerialSink());
+    return (ILogOutputSink *)(new LogSerialSink());
 }
 #endif
 
@@ -176,87 +177,71 @@ ILogOutputSink * LOG_CALLCONV LogSerialSink::CreateInstance() {
 // Console sink
 // outputs all debug messages to the console
 //
-ILogOutputSink *LogConsoleSink::CreateInstance()
-{
-	return (ILogOutputSink *)(new LogConsoleSink());
+ILogOutputSink *LogConsoleSink::CreateInstance() {
+    return (ILogOutputSink *) (new LogConsoleSink());
 }
 
-void LogConsoleSink::Initialize(int argc, const char **argv)
-{
-	// Do stuff here
-	int i;
-	for (i=0;i<argc;i++)
-	{
-		if (!strcmp(argv[i],"filename"))
-		{
-			// 
-		}
-	}
+void LogConsoleSink::Initialize(int argc, const char **argv) {
+    // Do stuff here
+    int i;
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "filename")) {
+            //
+        }
+    }
 }
-int LogConsoleSink::WriteLine(int dbgLevel, char *hdr, char *string)
-{
-	int res = SINK_WRITE_FILTERED;
-	if (WithinRange(dbgLevel))
-	{ 
-		res = fprintf(stdout, "%s%s", hdr,string);
-		if (res < 0) {
-			res = SINK_WRITE_IO_ERROR;
-		}
-	}
-	return res;
+int LogConsoleSink::WriteLine(int dbgLevel, char *hdr, char *string) {
+    int res = SINK_WRITE_FILTERED;
+    if (WithinRange(dbgLevel)) {
+        res = fprintf(stdout, "%s%s", hdr, string);
+        if (res < 0) {
+            res = SINK_WRITE_IO_ERROR;
+        }
+    }
+    return res;
 }
-void LogConsoleSink::Close()
-{
-	// close file here
+void LogConsoleSink::Close() {
+    // close file here
 }
 
 // --------------------------------------------------------------------------
 //
 // Simple file sink
 //
-LogFileSink::LogFileSink()
-{
-	fOut = NULL;	
+LogFileSink::LogFileSink() {
+    fOut = NULL;
 }
-LogFileSink::~LogFileSink()
-{
-	if (fOut != NULL) {
-		Close();
-	}
+LogFileSink::~LogFileSink() {
+    if (fOut != NULL) {
+        Close();
+    }
 }
 
-ILogOutputSink *LogFileSink::CreateInstance()
-{
-	return (ILogOutputSink *)(new LogFileSink());
+ILogOutputSink *LogFileSink::CreateInstance() {
+    return (ILogOutputSink *) (new LogFileSink());
 }
 
-void LogFileSink::ParseArgs(int argc, const char **argv)
-{
-	int i;
-	
-	for (i=0;i<argc;i++)
-	{
-		if (!strcmp(argv[i],"file"))
-		{
-			this->properties.SetValue(LOG_CONF_LOGFILE, argv[++i]);
-		} else if (!strcmp(argv[i], "autoflush")) {
+void LogFileSink::ParseArgs(int argc, const char **argv) {
+    int i;
+
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "file")) {
+            this->properties.SetValue(LOG_CONF_LOGFILE, argv[++i]);
+        } else if (!strcmp(argv[i], "autoflush")) {
             autoflush = true;
         }
-	}	
+    }
 }
-void LogFileSink::Initialize(int argc, const char **argv)
-{
-	ParseArgs(argc, argv);
-	Open(properties.GetLogfileName(), false);
+void LogFileSink::Initialize(int argc, const char **argv) {
+    ParseArgs(argc, argv);
+    Open(properties.GetLogfileName(), false);
 }
-long LogFileSink::Size()
-{
-	if (fOut != NULL)
-	{
-#if defined(_WIN32) && (_MSC_VER>0x1310)
+long LogFileSink::Size() {
+    if (fOut != NULL) {
+#if defined(_WIN32) && (_MSC_VER > 0x1310)
         return _filelengthi64(_fileno(f));
 #else
-        long offset,length;
+        long offset, length;
         offset = ftell(fOut);
         if (offset < 0)
             return -1;
@@ -268,91 +253,83 @@ long LogFileSink::Size()
         return length;
 #endif
 
-	}
-	return -1;
+    }
+    return -1;
 }
 
-void LogFileSink::Open(const char *filename, bool bAppend)
-{
-	if (filename != NULL)
-	{
-		if (bAppend) {
+void LogFileSink::Open(const char *filename, bool bAppend) {
+    if (filename != NULL) {
+        if (bAppend) {
 #ifdef DEBUG
-	//Serial.printf("LogFileSink::Open, open with append\n");
-#endif			
-			fOut = fopen(filename,"a");	
-		} else
-		{
+            //Serial.printf("LogFileSink::Open, open with append\n");
+#endif
+            fOut = fopen(filename, "a");
+        } else {
 #ifdef DEBUG
-	//Serial.printf("LogFileSink::Open, open with overwrite\n");
-#endif			
-			fOut = fopen(filename,"w");	
-		}
+            //Serial.printf("LogFileSink::Open, open with overwrite\n");
+#endif
+            fOut = fopen(filename, "w");
+        }
 
 #ifdef DEBUG
-		if (fOut == NULL) {
-			//Serial.printf("LogFileSink::Open, failed to open file - did you mount a file system????\n");
-		}
-#endif		
-	}
+        if (fOut == NULL) {
+            //Serial.printf("LogFileSink::Open, failed to open file - did you mount a file system????\n");
+        }
+#endif
+    }
 
 }
 
-int LogFileSink::WriteLine(int dbgLevel, char *hdr, char *string)
-{
-#ifdef DEBUG	
+int LogFileSink::WriteLine(int dbgLevel, char *hdr, char *string) {
+#ifdef DEBUG
 //	Serial.printf("LogFileSink::WriteLine, called with string: %s\n", string);
 #endif
-	int res = SINK_WRITE_FILTERED;
-	if (fOut != NULL)
-	{
-		if (WithinRange(dbgLevel))
-		{
-			#ifdef DEBUG
-			//Serial.printf("LogFileSink::WriteLine, Writing to file\n");
-			#endif
-			if (hdr != NULL) {
-				res = fprintf(fOut,"%s%s",hdr,string);
-			} else {
-				res = fprintf(fOut,"%s",string);
-			}
-			if (res < 0) {
-				#ifdef DEBUG
-				//Serial.printf("LogFileSink::WriteLine, ERROR: %d\n", res);
-				#endif
-				res = SINK_WRITE_IO_ERROR;
-			} else if (autoflush) {
+    int res = SINK_WRITE_FILTERED;
+    if (fOut != NULL) {
+        if (WithinRange(dbgLevel)) {
+#ifdef DEBUG
+            //Serial.printf("LogFileSink::WriteLine, Writing to file\n");
+#endif
+            if (hdr != NULL) {
+                res = fprintf(fOut, "%s%s", hdr, string);
+            } else {
+                res = fprintf(fOut, "%s", string);
+            }
+            if (res < 0) {
+#ifdef DEBUG
+                //Serial.printf("LogFileSink::WriteLine, ERROR: %d\n", res);
+#endif
+                res = SINK_WRITE_IO_ERROR;
+            } else if (autoflush) {
                 fflush(fOut);
             }
-		}
-	} else {
-		#ifdef DEBUG
-		//Serial.printf("LogFileSink::WriteLine, Error, output file not open (fOut == NULL)\n");
-		#endif
-		res = SINK_WRITE_IO_ERROR;
-	}
-	return res;
-}
-void LogFileSink::Close()
-{
-	if (fOut != NULL)
-	{
-#ifdef DEBUG	
-	//Serial.printf("LogFileSink::Close, closing log file\n");
+        }
+    } else {
+#ifdef DEBUG
+        //Serial.printf("LogFileSink::WriteLine, Error, output file not open (fOut == NULL)\n");
 #endif
-		fclose(fOut);
-	}
-	fOut = NULL;
+        res = SINK_WRITE_IO_ERROR;
+    }
+    return res;
+}
+void LogFileSink::Close() {
+    if (fOut != NULL) {
+#ifdef DEBUG
+        //Serial.printf("LogFileSink::Close, closing log file\n");
+#endif
+        fclose(fOut);
+    }
+    fOut = NULL;
 }
 
 void LogFileSink::Flush() {
-	if (fOut != NULL) {
-#ifdef DEBUG	
-	//Serial.printf("LogFileSink::Flush, flushing log file\n");
+    if (fOut != NULL) {
+#ifdef DEBUG
+        //Serial.printf("LogFileSink::Flush, flushing log file\n");
 #endif
-	//	Serial.println("gnilk::LogFileSink, flush");
-		fflush(fOut);
-	}
+        //	Serial.println("gnilk::LogFileSink, flush");
+        fflush(fOut);
+    }
 }
 
 
@@ -366,103 +343,94 @@ void LogFileSink::Flush() {
 
 #define LOG_MAX_FILENAME 255
 
-LogRollingFileSink::LogRollingFileSink() : LogFileSink()
-{
+LogRollingFileSink::LogRollingFileSink() : LogFileSink() {
 }
-LogRollingFileSink::~LogRollingFileSink()
-{
+LogRollingFileSink::~LogRollingFileSink() {
 
 }
-ILogOutputSink *LogRollingFileSink::CreateInstance()
-{
-	return (ILogOutputSink *)(new LogRollingFileSink());
+ILogOutputSink *LogRollingFileSink::CreateInstance() {
+    return (ILogOutputSink *) (new LogRollingFileSink());
 }
 
-char *LogRollingFileSink::GetFileName(char *dst, int idx)
-{
-	const char *sFileName = properties.GetLogfileName();
-	snprintf(dst, LOG_MAX_FILENAME, "%s.%d.log",sFileName, idx);
+char *LogRollingFileSink::GetFileName(char *dst, int idx) {
+    const char *sFileName = properties.GetLogfileName();
+    snprintf(dst, LOG_MAX_FILENAME, "%s.%d.log", sFileName, idx);
 #ifdef DEBUG
-	//Serial.printf("LogRollingFileSink, filename: %s\n",dst);
+    //Serial.printf("LogRollingFileSink, filename: %s\n",dst);
 #endif
-	return dst;
+    return dst;
 }
 
-void LogRollingFileSink::RollOver()
-{
-	char dstFileName[LOG_MAX_FILENAME];
-	char srcFileName[LOG_MAX_FILENAME];
+void LogRollingFileSink::RollOver() {
+    char dstFileName[LOG_MAX_FILENAME];
+    char srcFileName[LOG_MAX_FILENAME];
 
-	// 1) Close current file
-	LogFileSink::Close();
-	// 2) Initiate rename loop
-	for(int i=nMaxBackupIndex-1;i>0;i--)
-	{
-		GetFileName(srcFileName, i);
-		GetFileName(dstFileName, i+1);
+    // 1) Close current file
+    LogFileSink::Close();
+    // 2) Initiate rename loop
+    for (int i = nMaxBackupIndex - 1; i > 0; i--) {
+        GetFileName(srcFileName, i);
+        GetFileName(dstFileName, i + 1);
 
 #ifdef WIN32
 #ifdef UNICODE
-		{
-			wchar_t w_dst[LOG_MAX_FILENAME];
-			wchar_t w_src[LOG_MAX_FILENAME];
-			mbstowcs(w_dst, dstFileName, LOG_MAX_FILENAME);
-			mbstowcs(w_src, srcFileName, LOG_MAX_FILENAME);			
-			MoveFile(w_src, w_dst);
-		}
+        {
+            wchar_t w_dst[LOG_MAX_FILENAME];
+            wchar_t w_src[LOG_MAX_FILENAME];
+            mbstowcs(w_dst, dstFileName, LOG_MAX_FILENAME);
+            mbstowcs(w_src, srcFileName, LOG_MAX_FILENAME);
+            MoveFile(w_src, w_dst);
+        }
 #else
-	MoveFile(srcFileName, dstFileName);
+    MoveFile(srcFileName, dstFileName);
 #endif
 #else
 #endif
-	}
-	// 3) Open up new file
-	GetFileName(srcFileName, 1);
-	LogFileSink::Open(srcFileName, false);
+    }
+    // 3) Open up new file
+    GetFileName(srcFileName, 1);
+    LogFileSink::Open(srcFileName, false);
 
 }
 
-void LogRollingFileSink::CheckApplyRules()
-{
-	if (nBytes > nBytesRollLimit) {
-		// Swap to new file..
-		RollOver();
-		nBytes = 0;
-	}
+void LogRollingFileSink::CheckApplyRules() {
+    if (nBytes > nBytesRollLimit) {
+        // Swap to new file..
+        RollOver();
+        nBytes = 0;
+    }
 }
 
-void LogRollingFileSink::Initialize(int argc, const char **argv)
-{
-	// ..This is not directly correct..
-	//LogFileSink::Initialize(argc, argv);
-	char tmp[LOG_MAX_FILENAME];
-	ParseArgs(argc, argv);
-	GetFileName(tmp, 1);
-	Open(tmp, true);
+void LogRollingFileSink::Initialize(int argc, const char **argv) {
+    // ..This is not directly correct..
+    //LogFileSink::Initialize(argc, argv);
+    char tmp[LOG_MAX_FILENAME];
+    ParseArgs(argc, argv);
+    GetFileName(tmp, 1);
+    Open(tmp, true);
 
 
-	nBytes = Size();
+    nBytes = Size();
 
-	// roll size limit of zero not allowed, using 10 MB instead
-	nBytesRollLimit = properties.GetMaxLogfileSize(); //LOG_SZ_KB(10);	// 10 Mb
-	if (!nBytesRollLimit) nBytesRollLimit = LOG_SZ_MB(10);
+    // roll size limit of zero not allowed, using 10 MB instead
+    nBytesRollLimit = properties.GetMaxLogfileSize(); //LOG_SZ_KB(10);	// 10 Mb
+    if (!nBytesRollLimit) nBytesRollLimit = LOG_SZ_MB(10);
 
-	nMaxBackupIndex = properties.GetMaxBackupIndex();	// 0 (zero) Work's like 'reset'
-	
-#ifdef DEBUG	
-	//Serial.printf("LogRollingFileSink, initialized with name: %s\n", tmp);
+    nMaxBackupIndex = properties.GetMaxBackupIndex();    // 0 (zero) Work's like 'reset'
+
+#ifdef DEBUG
+    //Serial.printf("LogRollingFileSink, initialized with name: %s\n", tmp);
 #endif
 }
 
-int LogRollingFileSink::WriteLine(int dbgLevel, char *hdr, char *string)
-{
-	int res;
-	CheckApplyRules();
-	res = LogFileSink::WriteLine(dbgLevel, hdr, string);
-	if (res > 0) {
-		nBytes+=res;
-	}
-	return res;
+int LogRollingFileSink::WriteLine(int dbgLevel, char *hdr, char *string) {
+    int res;
+    CheckApplyRules();
+    res = LogFileSink::WriteLine(dbgLevel, hdr, string);
+    if (res > 0) {
+        nBytes += res;
+    }
+    return res;
 }
 
 
@@ -478,93 +446,88 @@ ILoggerSinkList Logger::sinks;
 Logger::TimeFormat Logger::kTimeFormat = kTFLog4Net;
 LogProperties Logger::properties;
 
-void Logger::SendToSinks(int dbgLevel, char *hdr, char *string)
-{
-	ILogOutputSink *pSink = NULL;
-	ILoggerSinkList::iterator it;
-	it = sinks.begin();
-	while(it != sinks.end())
-	{
-		pSink = (ILogOutputSink *)*it;
-		pSink->WriteLine(dbgLevel, hdr, string);
-		it++;
-	}
+void Logger::SendToSinks(int dbgLevel, char *hdr, char *string) {
+    ILogOutputSink *pSink = NULL;
+    ILoggerSinkList::iterator it;
+    it = sinks.begin();
+    while (it != sinks.end()) {
+        pSink = (ILogOutputSink *) *it;
+        pSink->WriteLine(dbgLevel, hdr, string);
+        it++;
+    }
 }
 
 
 #ifdef WIN32
 struct timezone 
 {
-	int  tz_minuteswest; /* minutes W of Greenwich */
-	int  tz_dsttime;     /* type of dst correction */
+    int  tz_minuteswest; /* minutes W of Greenwich */
+    int  tz_dsttime;     /* type of dst correction */
 };
 
 static int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
-	FILETIME ft;
-	unsigned __int64 tmpres = 0;
-	static int tzflag;
+    FILETIME ft;
+    unsigned __int64 tmpres = 0;
+    static int tzflag;
 
-	if (NULL != tv)
-	{
-		GetSystemTimeAsFileTime(&ft);
+    if (NULL != tv)
+    {
+        GetSystemTimeAsFileTime(&ft);
 
-		tmpres |= ft.dwHighDateTime;
-		tmpres <<= 32;
-		tmpres |= ft.dwLowDateTime;
+        tmpres |= ft.dwHighDateTime;
+        tmpres <<= 32;
+        tmpres |= ft.dwLowDateTime;
 
-		/*converting file time to unix epoch*/
-		tmpres /= 10;  /*convert into microseconds*/
-		tmpres -= DELTA_EPOCH_IN_MICROSECS; 
-		tv->tv_sec = (long)(tmpres / 1000000UL);
-		tv->tv_usec = (long)(tmpres % 1000000UL);
-	}
+        /*converting file time to unix epoch*/
+        tmpres /= 10;  /*convert into microseconds*/
+        tmpres -= DELTA_EPOCH_IN_MICROSECS;
+        tv->tv_sec = (long)(tmpres / 1000000UL);
+        tv->tv_usec = (long)(tmpres % 1000000UL);
+    }
 
-	if (NULL != tz)
-	{
-		if (!tzflag)
-		{
-			_tzset();
-			tzflag++;
-		}
-		tz->tz_minuteswest = _timezone / 60;
-		tz->tz_dsttime = _daylight;
-	}
-	return 0;
+    if (NULL != tz)
+    {
+        if (!tzflag)
+        {
+            _tzset();
+            tzflag++;
+        }
+        tz->tz_minuteswest = _timezone / 60;
+        tz->tz_dsttime = _daylight;
+    }
+    return 0;
 }
 #endif
 //
 // Returns a formatted time string for logging
 // string can be either in default kTFLog4Net format or Unix
 //
-char *Logger::TimeString(int maxchar, char *dst)
-{
-	struct timeval tmv;
-	gettimeofday(&tmv, NULL);
-	
-	switch(kTimeFormat)
-	{
-		case kTFDefault :
-		case kTFUnix :
+char *Logger::TimeString(int maxchar, char *dst) {
+    struct timeval tmv;
+    gettimeofday(&tmv, NULL);
+
+    switch (kTimeFormat) {
+        case kTFDefault :
+        case kTFUnix :
 #ifdef WIN32
-			//ctime_s(&tmv.tv_sec, 24,dst);
+            //ctime_s(&tmv.tv_sec, 24,dst);
 #else
-			ctime_r(&tmv.tv_sec, dst);
+            ctime_r(&tmv.tv_sec, dst);
 #endif
-			dst[24] = '\0';
-			break;
-		case kTFLog4Net :
-			{
-				time_t bla = tmv.tv_sec;
-				struct tm *gmt = gmtime(&bla);
-				snprintf(dst,maxchar,"%.2d.%.2d.%.4d %.2d:%.2d:%.2d.%.3d",
-						 gmt->tm_mday,gmt->tm_mon+1,gmt->tm_year+1900, 
-						 gmt->tm_hour,gmt->tm_min,gmt->tm_sec,tmv.tv_usec/1000);
-			}
-			break;
-			
-	}
-	return dst;
+            dst[24] = '\0';
+            break;
+        case kTFLog4Net : {
+            time_t bla = tmv.tv_sec;
+            struct tm *gmt = gmtime(&bla);
+            snprintf(dst, maxchar, "%.2d.%.2d.%.4d %.2d:%.2d:%.2d.%.3d",
+                     gmt->tm_mday, gmt->tm_mon + 1, gmt->tm_year + 1900,
+                     gmt->tm_hour, gmt->tm_min, gmt->tm_sec, tmv.tv_usec / 1000);
+        }
+            break;
+
+    }
+    return dst;
 }
 
 #ifdef WIN32
@@ -575,58 +538,53 @@ CRITICAL_SECTION Logger::bufferLock;
 pthread_mutex_t Logger::bufferLock;
 #endif
 
-void *Logger::RequestBuffer()
-{
+void *Logger::RequestBuffer() {
 #ifdef WIN32
-	EnterCriticalSection(&bufferLock);
+    EnterCriticalSection(&bufferLock);
 #endif
 #ifdef LOGGER_HAVE_PTHREADS
-	pthread_mutex_lock(&bufferLock);
+    pthread_mutex_lock(&bufferLock);
 #endif
-	void *res = NULL;
-	if (buffers.empty())
-	{
-		res = (void *)new MsgBuffer();
-	} else {
-		res = buffers.front();
-		buffers.pop();
-	}
+    void *res = NULL;
+    if (buffers.empty()) {
+        res = (void *) new MsgBuffer();
+    } else {
+        res = buffers.front();
+        buffers.pop();
+    }
 #ifdef WIN32
-	LeaveCriticalSection(&bufferLock);
+    LeaveCriticalSection(&bufferLock);
 #endif
 #ifdef LOGGER_HAVE_PTHREADS
-	pthread_mutex_unlock(&bufferLock);
+    pthread_mutex_unlock(&bufferLock);
 #endif
 
 
-	return res;
+    return res;
 }
-void Logger::ReleaseBuffer(void *pBuf)
-{
+void Logger::ReleaseBuffer(void *pBuf) {
 #ifdef WIN32
-	EnterCriticalSection(&bufferLock);
+    EnterCriticalSection(&bufferLock);
 #endif
 #ifdef LOGGER_HAVE_PTHREADS
-	pthread_mutex_lock(&bufferLock);
+    pthread_mutex_lock(&bufferLock);
 #endif
 
-	buffers.push(pBuf);
+    buffers.push(pBuf);
 #ifdef WIN32
-	LeaveCriticalSection(&bufferLock);
+    LeaveCriticalSection(&bufferLock);
 #endif
 #ifdef LOGGER_HAVE_PTHREADS
-	pthread_mutex_unlock(&bufferLock);
+    pthread_mutex_unlock(&bufferLock);
 #endif
 }
 ILogger *Logger::GetLoggerFromName(const char *name) {
     ILogger *pLogger = NULL;
     auto it = loggers.begin();
-    while(it != loggers.end())
-    {
-        auto pInstance = (LoggerInstance *)*it;
+    while (it != loggers.end()) {
+        auto pInstance = (LoggerInstance *) *it;
         pLogger = pInstance->pLogger;
-        if (!strcmp(pLogger->GetName(), name))
-        {
+        if (!strcmp(pLogger->GetName(), name)) {
             return pLogger;
         }
         it++;
@@ -636,18 +594,41 @@ ILogger *Logger::GetLoggerFromName(const char *name) {
 ILogger *Logger::GetLoggerFromNameWithPrefix(const char *name, const char *prefix) {
     ILogger *pLogger = NULL;
     auto it = loggers.begin();
-    while(it != loggers.end()) {
-        auto pInstance = (LoggerInstance *)*it;
+    while (it != loggers.end()) {
+        auto pInstance = (LoggerInstance *) *it;
         pLogger = pInstance->pLogger;
         if (pLogger->GetPrefix() != NULL) {
-			if (!strcmp(pLogger->GetName(), name) && !strcmp(pLogger->GetPrefix(), prefix)) {
-				return pLogger;
-			}
+            if (!strcmp(pLogger->GetName(), name) && !strcmp(pLogger->GetPrefix(), prefix)) {
+                return pLogger;
+            }
         }
         it++;
     }
     return NULL;
 }
+
+void Logger::DisableLogger(const char *name) {
+    auto logger = GetLoggerFromName(name);
+    if (logger == nullptr) {
+        return;
+    }
+    logger->SetEnabled(false);
+}
+
+void Logger::EnableLogger(const char *name) {
+    auto logger = GetLoggerFromName(name);
+    if (logger == nullptr) {
+        return;
+    }
+    logger->SetEnabled(true);
+}
+
+void Logger::DisableAllLoggers() {
+    for (auto &logger: loggers) {
+        logger->pLogger->SetEnabled(false);
+    }
+}
+
 
 //
 // This returns a Logger with a name and optionally a prefix
@@ -657,102 +638,98 @@ ILogger *Logger::GetLoggerFromNameWithPrefix(const char *name, const char *prefi
 // If AutoSplitPrefix is FALSE the name will be used as is and the prefix added if specified.
 // Reason why prefix is added 'behind' is because of API compatibility.
 //
-ILogger *Logger::GetLogger(const char *name, const char *prefix /* = NULL */)
-{
-	ILogger *pLogger = NULL;
-	LoggerInstance *pInstance;
-	ILoggerList::iterator it;
+ILogger *Logger::GetLogger(const char *name, const char *prefix /* = NULL */) {
+    ILogger *pLogger = NULL;
+    LoggerInstance *pInstance;
+    ILoggerList::iterator it;
 
-	// Prefix handling could do with refactoring....
-	char *logprefix = (char *)prefix;
-	char namebuffer[128];
-	strncpy(namebuffer, name, 128);
+    // Prefix handling could do with refactoring....
+    char *logprefix = (char *) prefix;
+    char namebuffer[128];
+    strncpy(namebuffer, name, 128);
 
-	char *logname = namebuffer;
+    char *logname = namebuffer;
 
-	Initialize();
-	if (prefix == NULL && properties.IsAutoPrefixEnabled()) {
-		// a name with 'prefixing' looks like:  "prefix::item"
-		// generally the prefix would be the class name and the item equals the function
-		char *split = (char *)strchr(namebuffer, ':');
-		if ((split != NULL) && (split[1]==':')) {
-			logname = (char *)&split[2];	// this is the name
-			logprefix = namebuffer;
-			split[0] = '\0';
-		}
-	}
+    Initialize();
+    if (prefix == NULL && properties.IsAutoPrefixEnabled()) {
+        // a name with 'prefixing' looks like:  "prefix::item"
+        // generally the prefix would be the class name and the item equals the function
+        char *split = (char *) strchr(namebuffer, ':');
+        if ((split != NULL) && (split[1] == ':')) {
+            logname = (char *) &split[2];    // this is the name
+            logprefix = namebuffer;
+            split[0] = '\0';
+        }
+    }
 
 
-	// If prefix is NULL, just use the same old method as before
-	if (logprefix == NULL) {
-	    pLogger = GetLoggerFromName(logname);
-	} else {
+    // If prefix is NULL, just use the same old method as before
+    if (logprefix == NULL) {
+        pLogger = GetLoggerFromName(logname);
+    } else {
         pLogger = GetLoggerFromNameWithPrefix(logname, logprefix);
-	}
+    }
 
     if (pLogger != NULL) {
         return pLogger;
     }
 
-	// Have to create a new logger
-	pLogger = (ILogger *)new Logger(logname, logprefix);
-	pInstance = new LoggerInstance(pLogger);
-	// TODO: Support for exclude list
+    // Have to create a new logger
+    pLogger = (ILogger *) new Logger(logname, logprefix);
+    pInstance = new LoggerInstance(pLogger);
+    // TODO: Support for exclude list
 
-	loggers.push_back(pInstance);
-	return pLogger;	
+    loggers.push_back(pInstance);
+    return pLogger;
 }
 
 void Logger::CloseAll() {
-	ILogOutputSink *pSink;
-	ILoggerSinkList::iterator it;
-	Initialize();
-	
-	it = sinks.begin();
-	while(it != sinks.end())
-	{	
-		pSink = (ILogOutputSink *)*it;
-		pSink->Close();
-		delete pSink;
-		it++;
-	}
+    ILogOutputSink *pSink;
+    ILoggerSinkList::iterator it;
+    Initialize();
 
-	sinks.clear();
-	loggers.clear();
+    it = sinks.begin();
+    while (it != sinks.end()) {
+        pSink = (ILogOutputSink *) *it;
+        pSink->Close();
+        delete pSink;
+        it++;
+    }
+
+    sinks.clear();
+    loggers.clear();
 
 }
 
-void Logger::SetAllSinkDebugLevel(int iNewDebugLevel)
-{
-	// This might very well be the first call, make sure we are initalized
-	Initialize();
-	
-	LogBaseSink *pSink = NULL;
-	ILoggerSinkList::iterator it;
-	it = sinks.begin();
-	while(it != sinks.end())
-	{
-		pSink = (LogBaseSink *)*it;
-		pSink->GetProperties()->SetDebugLevel(iNewDebugLevel);
-		it++;
-	}
+void Logger::SetAllSinkDebugLevel(int iNewDebugLevel) {
+    // This might very well be the first call, make sure we are initalized
+    Initialize();
+
+    LogBaseSink *pSink = NULL;
+    ILoggerSinkList::iterator it;
+    it = sinks.begin();
+    while (it != sinks.end()) {
+        pSink = (LogBaseSink *) *it;
+        pSink->GetProperties()->SetDebugLevel(iNewDebugLevel);
+        it++;
+    }
 }
-// TODO: Update sink properties!
 
 // Without initialization
-void Logger::AddSink(ILogOutputSink *pSink, const char *sName)
-{
-	LogBaseSink *pBase = (LogBaseSink *)pSink;
-	if (pBase != NULL) {
-		pBase->SetName(sName);
-	}
-	sinks.push_back(pSink);
+void Logger::AddSink(ILogOutputSink *pSink, const char *sName) {
+    // Don't add an empty sink...
+    if ((pSink == nullptr) || (sName == nullptr)) {
+        return;
+    }
+
+    LogBaseSink *pBase = (LogBaseSink *) pSink;
+    pBase->SetName(sName);
+    sinks.push_back(pSink);
 }
 // With initialization
-void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, const char **argv)
-{
-	pSink->Initialize(argc, argv);
-	AddSink(pSink, sName);
+void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, const char **argv) {
+    pSink->Initialize(argc, argv);
+    AddSink(pSink, sName);
 }
 
 bool Logger::RemoveSink(const char *sName) {
@@ -770,201 +747,180 @@ bool Logger::RemoveSink(const char *sName) {
 //
 // Create sink's based on class name and factory instances in the global list
 //
-ILogOutputSink *Logger::CreateSink(const char *className)
-{
-	for(int i=0;sinkFactoryList[i].factory!=NULL;i++) {
-		if (sinkFactoryList[i].name == className) {
-			return sinkFactoryList[i].factory();			
-		}
-		// if (!strcmp(sinkFactoryList[i].name, className)) {
-		// 	return sinkFactoryList[i].factory();			
-		// }
-	}
-	return NULL;
+ILogOutputSink *Logger::CreateSink(const char *className) {
+    for (int i = 0; sinkFactoryList[i].factory != NULL; i++) {
+        if (sinkFactoryList[i].name == className) {
+            return sinkFactoryList[i].factory();
+        }
+        // if (!strcmp(sinkFactoryList[i].name, className)) {
+        // 	return sinkFactoryList[i].factory();
+        // }
+    }
+    return NULL;
 }
 
 //
 // This will clear out everything and rebuild all sink's from the configuration
 //
-void Logger::RebuildSinksFromConfiguration()
-{
-	char appenders[256];
-	if (!properties.GetValue("sinks",appenders,256,NULL)) return;
+void Logger::RebuildSinksFromConfiguration() {
+    char appenders[256];
+    if (!properties.GetValue("sinks", appenders, 256, NULL)) return;
 
-	std::vector<std::string> arAppenders;
+    std::vector<std::string> arAppenders;
 
-	// TODO: need to call destructors here I guess
-	sinks.clear();
+    // TODO: need to call destructors here I guess
+    sinks.clear();
 
-	int nAppenders = StrExplode(&arAppenders, appenders, ',');
-	for (int i=0;i<nAppenders;i++)
-	{
-		char className[256];
-		std::string sinkName = arAppenders[i] + ".class";
-		if (properties.GetValue(sinkName.c_str(), className, 256, NULL)) 
-		{
-			LogBaseSink *pSink = (LogBaseSink *)CreateSink(className);
-			if (pSink != NULL)
-			{
-				// 1) Extract all known properties and put to sink
-				std::vector<std::pair<std::string, std::string> > sinkProperties;
-				properties.GetAllStartingWith(&sinkProperties, arAppenders[i].c_str());
-				for(int p=0;p<(int)sinkProperties.size();p++) {
-					pSink->GetProperties()->SetValue(sinkProperties[i].first.c_str(),sinkProperties[i].second.c_str());
-				}
-				// 2) Call initialize and attach
-				pSink->Initialize(0,NULL);
-				sinks.push_back(pSink);
-			}
-		}
-	}
+    int nAppenders = StrExplode(&arAppenders, appenders, ',');
+    for (int i = 0; i < nAppenders; i++) {
+        char className[256];
+        std::string sinkName = arAppenders[i] + ".class";
+        if (properties.GetValue(sinkName.c_str(), className, 256, NULL)) {
+            LogBaseSink *pSink = (LogBaseSink *) CreateSink(className);
+            if (pSink != NULL) {
+                // 1) Extract all known properties and put to sink
+                std::vector<std::pair<std::string, std::string> > sinkProperties;
+                properties.GetAllStartingWith(&sinkProperties, arAppenders[i].c_str());
+                for (int p = 0; p < (int) sinkProperties.size(); p++) {
+                    pSink->GetProperties()->SetValue(sinkProperties[i].first.c_str(), sinkProperties[i].second.c_str());
+                }
+                // 2) Call initialize and attach
+                pSink->Initialize(0, NULL);
+                sinks.push_back(pSink);
+            }
+        }
+    }
 }
 
-void Logger::Initialize()
-{
-	if (!Logger::bInitialized)
-	{
-		// Initialize the rest
+void Logger::Initialize() {
+    if (!Logger::bInitialized) {
+        // Initialize the rest
 #if defined(DEBUG) || defined(_DEBUG)
-		ILogOutputSink *pSink = (ILogOutputSink *)new LogConsoleSink();
-		AddSink(pSink, "console", 0, NULL);
+        ILogOutputSink *pSink = (ILogOutputSink *) new LogConsoleSink();
+        AddSink(pSink, "console", 0, NULL);
 #endif
-		Logger::bInitialized = true;
-		properties.SetDebugLevel(DEFAULT_DEBUG_LEVEL);
-		properties.SetName("Logger");
+        Logger::bInitialized = true;
+        properties.SetDebugLevel(DEFAULT_DEBUG_LEVEL);
+        properties.SetName("Logger");
 
-		// HACK
-		properties.ReadFromFile("logger.res");
-		char appenders[256];
-		properties.GetValue("sinks",appenders, 256, "");
-		if (strcmp(appenders, "")) {
-			RebuildSinksFromConfiguration();
-		}
+        // HACK
+        properties.ReadFromFile("logger.res");
+        char appenders[256];
+        properties.GetValue("sinks", appenders, 256, "");
+        if (strcmp(appenders, "")) {
+            RebuildSinksFromConfiguration();
+        }
 #ifdef WIN32
-		InitializeCriticalSection(&bufferLock);
+        InitializeCriticalSection(&bufferLock);
 #endif
-	}
+    }
 }
 
 // Regular functions
 
-Logger::Logger(const char *sName, const char *sPrefix)
-{
+Logger::Logger(const char *sName, const char *sPrefix) {
+    this->isEnabled = true;
     this->sName = strdup(sName);
-	if (sPrefix != NULL) {
-	    this->sPrefix = strdup(sPrefix);
-	} else {
-		this->sPrefix = NULL;
-	}
-	this->iIndentLevel = 0;
-	this->sIndent = (char *)malloc(MAX_INDENT+1);
-	memset(this->sIndent,0,MAX_INDENT+1);
-	Logger::Initialize();
+    if (sPrefix != NULL) {
+        this->sPrefix = strdup(sPrefix);
+    } else {
+        this->sPrefix = NULL;
+    }
+    this->iIndentLevel = 0;
+    this->sIndent = (char *) malloc(MAX_INDENT + 1);
+    memset(this->sIndent, 0, MAX_INDENT + 1);
+    Logger::Initialize();
 }
-Logger::~Logger()
-{
-	free(this->sName);
-	// remove this from list of loggers
-	// TODO: better clean up, properties...
+Logger::~Logger() {
+    free(this->sName);
+    // remove this from list of loggers
+    // TODO: better clean up, properties...
 }
-static std::string lMessageClassNames[] = 
-{
-	"NONE",			// 0
-	"DEBUG",		// 1
-	"INFO",			// 2
-	"WARN",			// 3
-	"ERROR",		// 4
-	"CRITICAL"		// 5
-	"CUSTOM"		// 6
-};
-const char *Logger::MessageClassNameFromInt(int mc) 
-{
-	if ((mc>=Logger::kMCNone) && (mc<(int)Logger::kMCDebug)) 
-	{
-		return lMessageClassNames[0].c_str();
-	}
-	else if ((mc>=(int)Logger::kMCDebug) && (mc<(int)Logger::kMCInfo))
-	{
-		return lMessageClassNames[1].c_str();
-	}
-	else if ((mc>=(int)Logger::kMCInfo) && (mc<(int)Logger::kMCWarning))
-	{
-		return lMessageClassNames[2].c_str();
-	}
-	else if ((mc>=(int)Logger::kMCWarning) && (mc<(int)Logger::kMCError))
-	{
-		return lMessageClassNames[3].c_str();
-	}
-	else if ((mc>=(int)Logger::kMCError) && (mc<(int)Logger::kMCCritical))
-	{
-		return lMessageClassNames[4].c_str();
-	}
-	else if ((mc>=(int)Logger::kMCCritical))
-	{
-		return lMessageClassNames[5].c_str();
-	} 
-	return lMessageClassNames[6].c_str();
+static std::string lMessageClassNames[] =
+        {
+                "NONE",            // 0
+                "DEBUG",        // 1
+                "INFO",            // 2
+                "WARN",            // 3
+                "ERROR",        // 4
+                "CRITICAL"        // 5
+                "CUSTOM"        // 6
+        };
+const char *Logger::MessageClassNameFromInt(int mc) {
+    if ((mc >= Logger::kMCNone) && (mc < (int) Logger::kMCDebug)) {
+        return lMessageClassNames[0].c_str();
+    } else if ((mc >= (int) Logger::kMCDebug) && (mc < (int) Logger::kMCInfo)) {
+        return lMessageClassNames[1].c_str();
+    } else if ((mc >= (int) Logger::kMCInfo) && (mc < (int) Logger::kMCWarning)) {
+        return lMessageClassNames[2].c_str();
+    } else if ((mc >= (int) Logger::kMCWarning) && (mc < (int) Logger::kMCError)) {
+        return lMessageClassNames[3].c_str();
+    } else if ((mc >= (int) Logger::kMCError) && (mc < (int) Logger::kMCCritical)) {
+        return lMessageClassNames[4].c_str();
+    } else if ((mc >= (int) Logger::kMCCritical)) {
+        return lMessageClassNames[5].c_str();
+    }
+    return lMessageClassNames[6].c_str();
 
 }
 
-int Logger::MessageLevelFromName(const char *level)
-{
-	if (!strcmp(level, "NONE")) return kMCNone;
-	if (!strcmp(level, "DEBUG")) return kMCDebug;
-	if (!strcmp(level, "INFO")) return kMCInfo;
-	if (!strcmp(level, "WARN")) return kMCWarning;
-	if (!strcmp(level, "WARNING")) return kMCWarning;
-	if (!strcmp(level, "ERROR")) return kMCError;
-	if (!strcmp(level, "CRITICAL")) return kMCCritical;
-	return kMCNone;
+int Logger::MessageLevelFromName(const char *level) {
+    if (!strcmp(level, "NONE")) return kMCNone;
+    if (!strcmp(level, "DEBUG")) return kMCDebug;
+    if (!strcmp(level, "INFO")) return kMCInfo;
+    if (!strcmp(level, "WARN")) return kMCWarning;
+    if (!strcmp(level, "WARNING")) return kMCWarning;
+    if (!strcmp(level, "ERROR")) return kMCError;
+    if (!strcmp(level, "CRITICAL")) return kMCCritical;
+    return kMCNone;
 }
 
 //
-void Logger::WriteReportString(int mc, MsgBuffer *pBuf)
-{
-	char sHdr[MAX_INDENT + 64];
-	char sTime[32];	// saftey, 26 is enough
+void Logger::WriteReportString(int mc, MsgBuffer *pBuf) {
+    char sHdr[MAX_INDENT + 64];
+    char sTime[32];    // saftey, 26 is enough
 
 //
-	char *string = pBuf->GetBuffer();
-	#ifdef LOGGER_HAVE_NEWLINE										
-	strncat(string, "\n", pBuf->GetSize());				
-	#endif																	
+    char *string = pBuf->GetBuffer();
+#ifdef LOGGER_HAVE_NEWLINE
+    strncat(string, "\n", pBuf->GetSize());
+#endif
 
 
-	const char *sLevel = MessageClassNameFromInt(mc);
+    const char *sLevel = MessageClassNameFromInt(mc);
 
-	TimeString(32, sTime);
-	// Create the special header string
-	// Format: "time [thread] msglevel module - "
+    TimeString(32, sTime);
+    // Create the special header string
+    // Format: "time [thread] msglevel module - "
 
 #ifdef WIN32
-	DWORD tid = 0;
-	tid = GetCurrentThreadId();
-#else	
-	uint32_t tid;
-	void *p_thread = NULL;	
-	#ifdef LOGGER_HAVE_PTHREADS
-	p_thread = pthread_self();	
-	#endif
-	tid = (uint64_t)(p_thread) & 0xffffffff;
+    DWORD tid = 0;
+    tid = GetCurrentThreadId();
+#else
+    uint32_t tid;
+    void *p_thread = NULL;
+#ifdef LOGGER_HAVE_PTHREADS
+    p_thread = pthread_self();
 #endif
-	if (this->sPrefix == NULL) {
-	    if (IsAutoPrefixEnabled()) {
-            snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x::                ] %8s %32s - %s", sTime, tid, sLevel, sName, sIndent);
-	    } else {
+    tid = (uint64_t) (p_thread) & 0xffffffff;
+#endif
+    if (this->sPrefix == NULL) {
+        if (IsAutoPrefixEnabled()) {
+            snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x::                ] %8s %32s - %s", sTime, tid, sLevel, sName,
+                     sIndent);
+        } else {
             snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x] %8s %32s - %s", sTime, tid, sLevel, sName, sIndent);
-	    }
-	} else {
+        }
+    } else {
         snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x::%16s] %8s %32s - %s", sTime, tid, sPrefix, sLevel, sName, sIndent);
-	}
-	
-	Logger::SendToSinks((int)mc,sHdr, string);
+    }
+
+    Logger::SendToSinks((int) mc, sHdr, string);
 }
 
 void Logger::GenerateIndentString() {
-	memset(this->sIndent,0,MAX_INDENT+1);
-	memset(this->sIndent,' ',iIndentLevel);
+    memset(this->sIndent, 0, MAX_INDENT + 1);
+    memset(this->sIndent, ' ', iIndentLevel);
 }
 
 
@@ -973,90 +929,79 @@ void Logger::GenerateIndentString() {
 // Event is essentially a container around the buffer which makes a query for the buffer
 // upon creation and releases it in the destructor
 #define WRITE_REPORT_STRING(__DBGTYPE__) \
-	va_list	values;														\
-	char * newstr = NULL;												\
-	try {																\
-		LogEvent evt;													\
-		MsgBuffer *pBuf = evt.GetBuffer();								\
-		int res;														\
-		do																\
-		{																\
-			newstr=pBuf->GetBuffer();									\
-			va_start( values, sFormat );								\
-			res = vsnprintf(newstr, pBuf->GetSize(), sFormat, values);	\
-			va_end(	values);											\
-			if (res < 0) {												\
-				pBuf->Extend();											\
-			}															\
-		} while(res < 0);												\
-		Logger::WriteReportString(__DBGTYPE__, pBuf);		            \
-	} catch(...) {														\
-	}																	\
+    va_list    values;                                                        \
+    char * newstr = NULL;                                                \
+    try {                                                                \
+        LogEvent evt;                                                    \
+        MsgBuffer *pBuf = evt.GetBuffer();                                \
+        int res;                                                        \
+        do                                                                \
+        {                                                                \
+            newstr=pBuf->GetBuffer();                                    \
+            va_start( values, sFormat );                                \
+            res = vsnprintf(newstr, pBuf->GetSize(), sFormat, values);    \
+            va_end(    values);                                            \
+            if (res < 0) {                                                \
+                pBuf->Extend();                                            \
+            }                                                            \
+        } while(res < 0);                                                \
+        Logger::WriteReportString(__DBGTYPE__, pBuf);                    \
+    } catch(...) {                                                        \
+    }                                                                    \
 
 
 
-void Logger::WriteLine(int iDbgLevel, const char *sFormat,...)
-{
-	// Always write stuff without global filtering - let appenders figure it out..
-	WRITE_REPORT_STRING(iDbgLevel);
+void Logger::WriteLine(int iDbgLevel, const char *sFormat, ...) {
+    // Always write stuff without global filtering - let appenders figure it out..
+    WRITE_REPORT_STRING(iDbgLevel);
 }
-void Logger::WriteLine(const char *sFormat,...)
-{
-	// Always write stuff without global filtering - let appenders figure it out..
-	WRITE_REPORT_STRING(kMCNone);
+void Logger::WriteLine(const char *sFormat, ...) {
+    // Always write stuff without global filtering - let appenders figure it out..
+    WRITE_REPORT_STRING(kMCNone);
 }
-void Logger::Critical(const char *sFormat,...)
-{
-	if (IsCriticalEnabled()) {
-		WRITE_REPORT_STRING(kMCCritical);
-	}
+void Logger::Critical(const char *sFormat, ...) {
+    if (IsCriticalEnabled()) {
+        WRITE_REPORT_STRING(kMCCritical);
+    }
 }
-void Logger::Error(const char *sFormat, ...)
-{
-	if (IsErrorEnabled()) {
-		WRITE_REPORT_STRING(kMCError);
-	}
+void Logger::Error(const char *sFormat, ...) {
+    if (IsErrorEnabled()) {
+        WRITE_REPORT_STRING(kMCError);
+    }
 }
-void Logger::Warning(const char *sFormat, ...)
-{	
-	if (IsWarningEnabled()) {
-		WRITE_REPORT_STRING(kMCWarning);
-	}
+void Logger::Warning(const char *sFormat, ...) {
+    if (IsWarningEnabled()) {
+        WRITE_REPORT_STRING(kMCWarning);
+    }
 }
-void Logger::Info(const char *sFormat, ...)
-{
-	if (IsInfoEnabled()) {
-		WRITE_REPORT_STRING(kMCInfo);
-	}
+void Logger::Info(const char *sFormat, ...) {
+    if (IsInfoEnabled()) {
+        WRITE_REPORT_STRING(kMCInfo);
+    }
 }
-void Logger::Debug(const char *sFormat, ...)
-{
-	if (IsDebugEnabled()) {
-		WRITE_REPORT_STRING(kMCDebug);
-	}
+void Logger::Debug(const char *sFormat, ...) {
+    if (IsDebugEnabled()) {
+        WRITE_REPORT_STRING(kMCDebug);
+    }
 }
 
 
 // Increases intendation
-void Logger::Enter()
-{
-	iIndentLevel+=Logger::iIndentStep;
-	if (iIndentLevel > MAX_INDENT)
-	{
-		iIndentLevel = MAX_INDENT;
-	}
-	GenerateIndentString();
+void Logger::Enter() {
+    iIndentLevel += Logger::iIndentStep;
+    if (iIndentLevel > MAX_INDENT) {
+        iIndentLevel = MAX_INDENT;
+    }
+    GenerateIndentString();
 }
 
 // Decreases intendation
-void Logger::Leave()
-{
-	iIndentLevel-=Logger::iIndentStep;
-	if (iIndentLevel < 0)
-	{
-		iIndentLevel = 0;
-	}
-	GenerateIndentString();
+void Logger::Leave() {
+    iIndentLevel -= Logger::iIndentStep;
+    if (iIndentLevel < 0) {
+        iIndentLevel = 0;
+    }
+    GenerateIndentString();
 }
 
 // ---------------------------------------------------------------------------
@@ -1064,14 +1009,12 @@ void Logger::Leave()
 // Holds an instance of a logger
 //
 
-LoggerInstance::LoggerInstance()
-{
-	this->pLogger = NULL;
+LoggerInstance::LoggerInstance() {
+    this->pLogger = NULL;
 }
 
-LoggerInstance::LoggerInstance(ILogger *pLogger)
-{
-	this->pLogger = pLogger;
+LoggerInstance::LoggerInstance(ILogger *pLogger) {
+    this->pLogger = pLogger;
 }
 
 
@@ -1081,170 +1024,145 @@ LoggerInstance::LoggerInstance(ILogger *pLogger)
 // Each debug string get's copied in to a message buffer before feed down the
 // chain of sink's
 //
-MsgBuffer::MsgBuffer()
-{
-	buffer = (char *)malloc(DEFAULT_BUFFER_SIZE);
-	sz = DEFAULT_BUFFER_SIZE;
+MsgBuffer::MsgBuffer() {
+    buffer = (char *) malloc(DEFAULT_BUFFER_SIZE);
+    sz = DEFAULT_BUFFER_SIZE;
 }
-MsgBuffer::~MsgBuffer()
-{
-	free(buffer);
+MsgBuffer::~MsgBuffer() {
+    free(buffer);
 }
-void MsgBuffer::Extend()
-{
-	sz += DEFAULT_BUFFER_SIZE;
-	char *tmp = (char *)realloc(buffer, sz);
-	if (tmp == NULL)
-	{
-		//exit(1);	// can't allocate memory, just leave..
-		tmp = buffer;
-		sz -= DEFAULT_BUFFER_SIZE;
-	}
-	buffer = tmp;
+void MsgBuffer::Extend() {
+    sz += DEFAULT_BUFFER_SIZE;
+    char *tmp = (char *) realloc(buffer, sz);
+    if (tmp == NULL) {
+        //exit(1);	// can't allocate memory, just leave..
+        tmp = buffer;
+        sz -= DEFAULT_BUFFER_SIZE;
+    }
+    buffer = tmp;
 }
 // ---------------------------------------------------------------------------
 //
 // Property handling
 //
-LogProperties::LogProperties() : LogPropertyReader()
-{
-	SetDefaults();
+LogProperties::LogProperties() : LogPropertyReader() {
+    SetDefaults();
 }
-void LogProperties::SetDefaults()
-{
-	this->iDebugLevel = DEFAULT_DEBUG_LEVEL;
-	this->name = strdup(DEFAULT_SINK_NAME);
-	this->logFileName = strdup(DEFAULT_LOGFILE_NAME);
-	this->nMaxBackupIndex = 10;
-	this->nMaxLogfileSize = LOG_SZ_MB(10);
-	this->autoPrefix = false; // Automatically split logger names like "Prefix::PostFix"
+void LogProperties::SetDefaults() {
+    this->iDebugLevel = DEFAULT_DEBUG_LEVEL;
+    this->name = strdup(DEFAULT_SINK_NAME);
+    this->logFileName = strdup(DEFAULT_LOGFILE_NAME);
+    this->nMaxBackupIndex = 10;
+    this->nMaxLogfileSize = LOG_SZ_MB(10);
+    this->autoPrefix = false; // Automatically split logger names like "Prefix::PostFix"
 }
 
-#define REPLACE_STR(__dst,__src)\
-	if (__dst != NULL)		\
-	{						\
-		free(__dst);		\
-	}						\
-	__dst = strdup(__src);
+#define REPLACE_STR(__dst, __src)\
+    if (__dst != NULL)        \
+    {                        \
+        free(__dst);        \
+    }                        \
+    __dst = strdup(__src);
 
-void LogProperties::SetName(const char *newName)
-{
-	REPLACE_STR(this->name, newName);
+void LogProperties::SetName(const char *newName) {
+    REPLACE_STR(this->name, newName);
 }
 
-void LogProperties::SetLogfileName(const char *newName)
-{
-	REPLACE_STR(this->logFileName, newName);
+void LogProperties::SetLogfileName(const char *newName) {
+    REPLACE_STR(this->logFileName, newName);
 }
 
-void LogProperties::SetClassName(const char *newName)
-{
-	REPLACE_STR(this->className, newName);
+void LogProperties::SetClassName(const char *newName) {
+    REPLACE_STR(this->className, newName);
 }
 
 // Called by the base class on 'SetValue' - use to update internal proper variables
-void LogProperties::OnValueChanged(const char *key, const char *value)
-{
-	if (!strcmp(key, LOG_CONF_NAME)) {
-		SetName(value);
-	} else if (!strcmp(key, LOG_CONF_DEBUGLEVEL)) {
-		int level = atoi(value);
-		if (!level)
-			level = Logger::MessageLevelFromName(value);			
-		SetDebugLevel(level);
-	} else if (!strcmp(key, LOG_CONF_MAXBACKUPINDEX)) {
-		SetMaxBackupIndex(atoi(value));		
-	} else if (!strcmp(key, LOG_CONF_MAXLOGSIZE)) {
-		SetMaxLogfileSize(atoi(value));
-	} else if (!strcmp(key, LOG_CONF_LOGFILE)) {
-		SetLogfileName(value);
-	} else if (!strcmp(key, LOG_CONF_CLASSNAME)) {
-		SetClassName(value);
-	}
+void LogProperties::OnValueChanged(const char *key, const char *value) {
+    if (!strcmp(key, LOG_CONF_NAME)) {
+        SetName(value);
+    } else if (!strcmp(key, LOG_CONF_DEBUGLEVEL)) {
+        int level = atoi(value);
+        if (!level)
+            level = Logger::MessageLevelFromName(value);
+        SetDebugLevel(level);
+    } else if (!strcmp(key, LOG_CONF_MAXBACKUPINDEX)) {
+        SetMaxBackupIndex(atoi(value));
+    } else if (!strcmp(key, LOG_CONF_MAXLOGSIZE)) {
+        SetMaxLogfileSize(atoi(value));
+    } else if (!strcmp(key, LOG_CONF_LOGFILE)) {
+        SetLogfileName(value);
+    } else if (!strcmp(key, LOG_CONF_CLASSNAME)) {
+        SetClassName(value);
+    }
 }
 
 // ---------------------------------------------------------------------------
 //
 // Property file reading
 //
-LogPropertyReader::LogPropertyReader()
-{
+LogPropertyReader::LogPropertyReader() {
 
 }
-LogPropertyReader::~LogPropertyReader()
-{
+LogPropertyReader::~LogPropertyReader() {
 
 }
 
-void LogPropertyReader::ParseLine(char *_line)
-{
-	if (_line == NULL) return;
+void LogPropertyReader::ParseLine(char *_line) {
+    if (_line == NULL) return;
 
-	if (_line[0]!='#')
-	{
-		char *line = StrTrim(_line);
-		char *value = strchr(line, '=');
-		if (value != NULL)
-		{
-			*value='\0';
-			value++;
-			SetValue(line, value);
-		}
-	}
+    if (_line[0] != '#') {
+        char *line = StrTrim(_line);
+        char *value = strchr(line, '=');
+        if (value != NULL) {
+            *value = '\0';
+            value++;
+            SetValue(line, value);
+        }
+    }
 }
 
-void LogPropertyReader::ReadFromFile(const char *filename)
-{
-	char line[256];
-	FILE *f = fopen(filename, "rb");
-	if (f != NULL)
-	{
-		while (fgets(line,256, f)!=NULL)
-		{
-			ParseLine(line);
-		}
-		fclose(f);
-	}
+void LogPropertyReader::ReadFromFile(const char *filename) {
+    char line[256];
+    FILE *f = fopen(filename, "rb");
+    if (f != NULL) {
+        while (fgets(line, 256, f) != NULL) {
+            ParseLine(line);
+        }
+        fclose(f);
+    }
 }
-void LogPropertyReader::WriteToFile(const char *filename)
-{
-	// TODO: Implement this one...
+void LogPropertyReader::WriteToFile(const char *filename) {
+    // TODO: Implement this one...
 }
 
-int LogPropertyReader::GetAllStartingWith(std::vector<std::pair<std::string, std::string> > *result, const char *filter)
-{
-	std::string sFilter(filter);
-	std::map<std::string, std::string>::iterator it;
+int
+LogPropertyReader::GetAllStartingWith(std::vector<std::pair<std::string, std::string> > *result, const char *filter) {
+    std::string sFilter(filter);
+    std::map<std::string, std::string>::iterator it;
 
-	for(it = properties.begin(); it!=properties.end(); it++)
-	{
-		if (it->first.compare(0,sFilter.length(),sFilter) == 0) {
-			result->push_back(std::pair<std::string, std::string>(it->first, it->second));
-		}
-	}
-	return result->size();
+    for (it = properties.begin(); it != properties.end(); it++) {
+        if (it->first.compare(0, sFilter.length(), sFilter) == 0) {
+            result->push_back(std::pair<std::string, std::string>(it->first, it->second));
+        }
+    }
+    return result->size();
 }
 
-char *LogPropertyReader::GetValue(const char *key, char *dst, int nMax, const char *defValue)
-{
-	if (properties.find(key) != properties.end())
-	{
-		strncpy(dst, properties.find(key)->second.c_str(), nMax);
-	} else
-	{
-		strncpy(dst, defValue, nMax);
-	}
-	return dst;
+char *LogPropertyReader::GetValue(const char *key, char *dst, int nMax, const char *defValue) {
+    if (properties.find(key) != properties.end()) {
+        strncpy(dst, properties.find(key)->second.c_str(), nMax);
+    } else {
+        strncpy(dst, defValue, nMax);
+    }
+    return dst;
 }
-void LogPropertyReader::SetValue(const char *key, const char *value)
-{
-	if (properties.find(key) != properties.end())
-	{
-		// Update needed, just remove and reinsert..
-		properties.erase(key);
-	}
-	properties.insert(std::pair<std::string, std::string>(key, value));
-	OnValueChanged(key, value);
+void LogPropertyReader::SetValue(const char *key, const char *value) {
+    if (properties.find(key) != properties.end()) {
+        // Update needed, just remove and reinsert..
+        properties.erase(key);
+    }
+    properties.insert(std::pair<std::string, std::string>(key, value));
+    OnValueChanged(key, value);
 }
 
 // -------------------------------------------------------------------------
@@ -1266,41 +1184,34 @@ static char *StrTrim(char *s) {
 //
 // Splits the string into substrings for a given character
 //
-static int StrExplode(std::vector<std::string> *strList, char *mString, int chrSplit)
-{
-	std::string strTmp,strPart;
-	size_t ofs,pos;
-	int count;
+static int StrExplode(std::vector<std::string> *strList, char *mString, int chrSplit) {
+    std::string strTmp, strPart;
+    size_t ofs, pos;
+    int count;
 
-	strTmp = std::string(mString);
-	pos = count = 0;
-	do 	
-	{
-		ofs = strTmp.find_first_of(chrSplit,pos);
+    strTmp = std::string(mString);
+    pos = count = 0;
+    do {
+        ofs = strTmp.find_first_of(chrSplit, pos);
 
-		if (ofs == -1)
-		{
-			if (pos != -1)
-			{
-				strPart = strTmp.substr(pos,strTmp.length()-pos);
-				strList->push_back(strPart);
-				count++;
-			}
-			else
-			{
-				// We had trailing spaces...
-			}
+        if (ofs == -1) {
+            if (pos != -1) {
+                strPart = strTmp.substr(pos, strTmp.length() - pos);
+                strList->push_back(strPart);
+                count++;
+            } else {
+                // We had trailing spaces...
+            }
 
-			break;
-		}
-		strPart = strTmp.substr(pos,ofs - pos);
-		strList->push_back(strPart);
-		pos = ofs+1;
-		pos = strTmp.find_first_not_of(chrSplit,pos);
-		count++;
-	} while(1);
+            break;
+        }
+        strPart = strTmp.substr(pos, ofs - pos);
+        strList->push_back(strPart);
+        pos = ofs + 1;
+        pos = strTmp.find_first_not_of(chrSplit, pos);
+        count++;
+    } while (1);
 
-	return count;
+    return count;
 } // StrExplode
 
-} // axcore

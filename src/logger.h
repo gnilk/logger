@@ -64,6 +64,8 @@ namespace gnilk
 		virtual int SetIndent(int nIndent) = 0;
         virtual char *GetName() = 0;
         virtual char *GetPrefix() = 0;
+		virtual bool IsEnabled() = 0;
+		virtual void SetEnabled(bool newIsEnabled) = 0;
 
 		// functions
 		virtual void WriteLine(const char *sFormat,...) = 0;
@@ -99,16 +101,6 @@ namespace gnilk
 	// Holds properties for the logger and/or sink
 	class LogProperties : public LogPropertyReader
 	{
-	protected:
-		int iDebugLevel;	// Everything above this becomes written to the sink
-		char *name;
-		int nMaxBackupIndex;
-		long nMaxLogfileSize;
-		char *logFileName;
-		char *className;
-		bool autoPrefix;	// This enables splitting logger names like 'prefix::postfix' and print them differently
-
-		void SetDefaults();
 	public:
 		LogProperties();
 
@@ -132,9 +124,18 @@ namespace gnilk
 		__inline int GetMaxBackupIndex() { return nMaxBackupIndex; };
 		__inline void SetMaxBackupIndex(const int nIndex) { nMaxBackupIndex = nIndex; }; 
 
-
 		// Event from reader
 		void OnValueChanged(const char *key, const char *value);
+	protected:
+		void SetDefaults();
+	protected:
+		int iDebugLevel;	// Everything above this becomes written to the sink
+		char *name;
+		int nMaxBackupIndex;
+		long nMaxLogfileSize;
+		char *logFileName;
+		char *className;
+		bool autoPrefix;	// This enables splitting logger names like 'prefix::postfix' and print them differently
 	};
 
 	// Used to wrap up indentation when using exceptions
@@ -280,7 +281,8 @@ namespace gnilk
 			kTFUnix,			
 		} TimeFormat;
 	private:
-		
+
+		bool isEnabled;
 		char *sName;
 		char *sPrefix;
 		char *sIndent;
@@ -328,15 +330,19 @@ namespace gnilk
 		static const char *MessageClassNameFromInt(int mc);
 		static int MessageLevelFromName(const char *level);
 
+        static void EnableLogger(const char *name);
+        static void DisableLogger(const char *name);
+        static void DisableAllLoggers();
 
-		static LogProperties *GetProperties() { return &Logger::properties; }
 
-		__inline bool IsDebugEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCDebug)?true:false);}
-		__inline bool IsInfoEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCInfo)?true:false);}
-		__inline bool IsWarningEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCWarning)?true:false);}
-		__inline bool IsErrorEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCError)?true:false);}
-		__inline bool IsCriticalEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCCritical)?true:false);}
-        __inline bool IsAutoPrefixEnabled() { return Logger::properties.IsAutoPrefixEnabled(); }
+        static LogProperties *GetProperties() { return &Logger::properties; }
+
+		__inline bool IsDebugEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCDebug)?true:false);}
+		__inline bool IsInfoEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCInfo)?true:false);}
+		__inline bool IsWarningEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCWarning)?true:false);}
+		__inline bool IsErrorEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCError)?true:false);}
+		__inline bool IsCriticalEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCCritical)?true:false);}
+        __inline bool IsAutoPrefixEnabled() { return (isEnabled && Logger::properties.IsAutoPrefixEnabled()); }
 
 
 
@@ -345,6 +351,8 @@ namespace gnilk
 		virtual int SetIndent(int nIndent) { iIndentLevel = nIndent; return iIndentLevel; };
         virtual char *GetName() { return sName;};
         virtual char *GetPrefix() { return sPrefix;};
+		virtual bool IsEnabled()  { return isEnabled; };
+		virtual void SetEnabled(bool newIsEnabled) { isEnabled = newIsEnabled; };
 
 		// Functions
 		virtual void WriteLine(int iDbgLevel, const char *sFormat,...);
