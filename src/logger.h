@@ -64,6 +64,8 @@ namespace gnilk
 		virtual int SetIndent(int nIndent) = 0;
         virtual char *GetName() = 0;
         virtual char *GetPrefix() = 0;
+		virtual bool IsEnabled() = 0;
+		virtual void SetEnabled(bool newIsEnabled) = 0;
 
 		// functions
 		virtual void WriteLine(const char *sFormat,...) = 0;
@@ -99,16 +101,6 @@ namespace gnilk
 	// Holds properties for the logger and/or sink
 	class LogProperties : public LogPropertyReader
 	{
-	protected:
-		int iDebugLevel;	// Everything above this becomes written to the sink
-		char *name;
-		int nMaxBackupIndex;
-		long nMaxLogfileSize;
-		char *logFileName;
-		char *className;
-		bool autoPrefix;	// This enables splitting logger names like 'prefix::postfix' and print them differently
-
-		void SetDefaults();
 	public:
 		LogProperties();
 
@@ -117,6 +109,8 @@ namespace gnilk
 		__inline void SetDebugLevel(int newLevel) { iDebugLevel = newLevel; }
 		__inline bool IsAutoPrefixEnabled() { return autoPrefix; }
 		__inline void AutoPrefixEnable(bool bEnable) { autoPrefix = bEnable; }
+        __inline bool IsEnabledOnCreate() { return createEnabled; }
+        __inline void EnableOnCreate(bool bEnable) { createEnabled = bEnable; }
 
 		__inline const char *GetName() { return name; };
 		void SetName(const char *newName);
@@ -132,9 +126,19 @@ namespace gnilk
 		__inline int GetMaxBackupIndex() { return nMaxBackupIndex; };
 		__inline void SetMaxBackupIndex(const int nIndex) { nMaxBackupIndex = nIndex; }; 
 
-
 		// Event from reader
 		void OnValueChanged(const char *key, const char *value);
+	protected:
+		void SetDefaults();
+	protected:
+		int iDebugLevel;	// Everything above this becomes written to the sink
+		char *name;
+		int nMaxBackupIndex;
+		long nMaxLogfileSize;
+		char *logFileName;
+		char *className;
+		bool autoPrefix;	// This enables splitting logger names like 'prefix::postfix' and print them differently
+        bool createEnabled = true;
 	};
 
 	// Used to wrap up indentation when using exceptions
@@ -279,37 +283,6 @@ namespace gnilk
 			kTFLog4Net,
 			kTFUnix,			
 		} TimeFormat;
-	private:
-		
-		char *sName;
-		char *sPrefix;
-		char *sIndent;
-		int iIndentLevel;
-		Logger(const char *sName, const char *sPrefix);		
-        void WriteReportString(int mc, gnilk::MsgBuffer *pBuf);		
-		void GenerateIndentString();
-		
-	private:
-		static TimeFormat kTimeFormat;
-		static bool bInitialized;
-		static int iIndentStep;
-		static ILoggerList loggers;
-		static ILoggerSinkList sinks;
-		static LogProperties properties;
-		static std::queue<void *> buffers;
-		static char *TimeString(int maxchar, char *dst);
-		static void SendToSinks(int dbgLevel, char *hdr, char *string);
-		static ILogOutputSink *CreateSink(const char *className);
-		static void RebuildSinksFromConfiguration();
-		static ILogger *GetLoggerFromName(const char *name);
-        static ILogger *GetLoggerFromNameWithPrefix(const char *name, const char *prefix);
-
-#ifdef WIN32
-		static CRITICAL_SECTION bufferLock;
-#endif
-#ifdef LOGGER_HAVE_PTHREADS
-		static pthread_mutex_t bufferLock;
-#endif
 	public:
 	
 		virtual ~Logger();
@@ -328,16 +301,23 @@ namespace gnilk
 		static const char *MessageClassNameFromInt(int mc);
 		static int MessageLevelFromName(const char *level);
 
+        static void EnableLogger(const char *name);
+        static void DisableLogger(const char *name);
+        static void DisableAllLoggers();
+        static void EnableAllLoggers();
 
-		static LogProperties *GetProperties() { return &Logger::properties; }
 
-		__inline bool IsDebugEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCDebug)?true:false);}
-		__inline bool IsInfoEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCInfo)?true:false);}
-		__inline bool IsWarningEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCWarning)?true:false);}
-		__inline bool IsErrorEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCError)?true:false);}
-		__inline bool IsCriticalEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCCritical)?true:false);}
-        __inline bool IsAutoPrefixEnabled() { return Logger::properties.IsAutoPrefixEnabled(); }
+        static LogProperties *GetProperties() { return &Logger::properties; }
 
+        // Instance interface
+    public:
+
+		__inline bool IsDebugEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCDebug)?true:false);}
+		__inline bool IsInfoEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCInfo)?true:false);}
+		__inline bool IsWarningEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCWarning)?true:false);}
+		__inline bool IsErrorEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCError)?true:false);}
+		__inline bool IsCriticalEnabled() { return (isEnabled && Logger::properties.IsLevelEnabled((int)kMCCritical)?true:false);}
+        __inline bool IsAutoPrefixEnabled() { return (isEnabled && Logger::properties.IsAutoPrefixEnabled()); }
 
 
         // properties
@@ -345,6 +325,8 @@ namespace gnilk
 		virtual int SetIndent(int nIndent) { iIndentLevel = nIndent; return iIndentLevel; };
         virtual char *GetName() { return sName;};
         virtual char *GetPrefix() { return sPrefix;};
+		virtual bool IsEnabled()  { return isEnabled; };
+		virtual void SetEnabled(bool newIsEnabled) { isEnabled = newIsEnabled; };
 
 		// Functions
 		virtual void WriteLine(int iDbgLevel, const char *sFormat,...);
@@ -359,6 +341,44 @@ namespace gnilk
         // Enter leave functions, use to auto-indent flow statements, take care on exceptions!
 		virtual void Enter();
 		virtual void Leave();
+
+        // Instance variables
+    private:
+        bool isEnabled;
+        char *sName;
+        char *sPrefix;
+        char *sIndent;
+        int iIndentLevel;
+        Logger(const char *sName, const char *sPrefix);
+        void WriteReportString(int mc, gnilk::MsgBuffer *pBuf);
+        void GenerateIndentString();
+
+	private:
+		static char *TimeString(int maxchar, char *dst);
+		static void SendToSinks(int dbgLevel, char *hdr, char *string);
+		static ILogOutputSink *CreateSink(const char *className);
+		static void RebuildSinksFromConfiguration();
+		static ILogger *GetLoggerFromName(const char *name);
+		static ILogger *GetLoggerFromNameWithPrefix(const char *name, const char *prefix);
+
+		// Create properties
+    private:
+        static TimeFormat kTimeFormat;
+        static bool bInitialized;
+        static int iIndentStep;
+        static ILoggerList loggers;
+        static ILoggerSinkList sinks;
+        static LogProperties properties;
+        static std::queue<void *> buffers;
+		static std::map<std::string, bool> enabledLoggers;
+
+#ifdef WIN32
+        static CRITICAL_SECTION bufferLock;
+#endif
+#ifdef LOGGER_HAVE_PTHREADS
+        static pthread_mutex_t bufferLock;
+#endif
+
 	};
 	
 }
