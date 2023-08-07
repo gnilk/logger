@@ -260,20 +260,14 @@ long LogFileSink::Size() {
 void LogFileSink::Open(const char *filename, bool bAppend) {
     if (filename != NULL) {
         if (bAppend) {
-#ifdef DEBUG
-            //Serial.printf("LogFileSink::Open, open with append\n");
-#endif
             fOut = fopen(filename, "a");
         } else {
-#ifdef DEBUG
-            //Serial.printf("LogFileSink::Open, open with overwrite\n");
-#endif
             fOut = fopen(filename, "w");
         }
 
 #ifdef DEBUG
         if (fOut == NULL) {
-            //Serial.printf("LogFileSink::Open, failed to open file - did you mount a file system????\n");
+            printf("LogFileSink::Open, failed to open file - errno=%d, %s\n", errno, strerror(errno));
         }
 #endif
     }
@@ -281,42 +275,27 @@ void LogFileSink::Open(const char *filename, bool bAppend) {
 }
 
 int LogFileSink::WriteLine(int dbgLevel, char *hdr, char *string) {
-#ifdef DEBUG
-//	Serial.printf("LogFileSink::WriteLine, called with string: %s\n", string);
-#endif
     int res = SINK_WRITE_FILTERED;
     if (fOut != NULL) {
         if (WithinRange(dbgLevel)) {
-#ifdef DEBUG
-            //Serial.printf("LogFileSink::WriteLine, Writing to file\n");
-#endif
             if (hdr != NULL) {
                 res = fprintf(fOut, "%s%s", hdr, string);
             } else {
                 res = fprintf(fOut, "%s", string);
             }
             if (res < 0) {
-#ifdef DEBUG
-                //Serial.printf("LogFileSink::WriteLine, ERROR: %d\n", res);
-#endif
                 res = SINK_WRITE_IO_ERROR;
             } else if (autoflush) {
                 fflush(fOut);
             }
         }
     } else {
-#ifdef DEBUG
-        //Serial.printf("LogFileSink::WriteLine, Error, output file not open (fOut == NULL)\n");
-#endif
         res = SINK_WRITE_IO_ERROR;
     }
     return res;
 }
 void LogFileSink::Close() {
     if (fOut != NULL) {
-#ifdef DEBUG
-        //Serial.printf("LogFileSink::Close, closing log file\n");
-#endif
         fclose(fOut);
     }
     fOut = NULL;
@@ -324,10 +303,6 @@ void LogFileSink::Close() {
 
 void LogFileSink::Flush() {
     if (fOut != NULL) {
-#ifdef DEBUG
-        //Serial.printf("LogFileSink::Flush, flushing log file\n");
-#endif
-        //	Serial.println("gnilk::LogFileSink, flush");
         fflush(fOut);
     }
 }
@@ -355,9 +330,6 @@ ILogOutputSink *LogRollingFileSink::CreateInstance() {
 char *LogRollingFileSink::GetFileName(char *dst, int idx) {
     const char *sFileName = properties.GetLogfileName();
     snprintf(dst, LOG_MAX_FILENAME, "%s.%d.log", sFileName, idx);
-#ifdef DEBUG
-    //Serial.printf("LogRollingFileSink, filename: %s\n",dst);
-#endif
     return dst;
 }
 
@@ -417,10 +389,6 @@ void LogRollingFileSink::Initialize(int argc, const char **argv) {
     if (!nBytesRollLimit) nBytesRollLimit = LOG_SZ_MB(10);
 
     nMaxBackupIndex = properties.GetMaxBackupIndex();    // 0 (zero) Work's like 'reset'
-
-#ifdef DEBUG
-    //Serial.printf("LogRollingFileSink, initialized with name: %s\n", tmp);
-#endif
 }
 
 int LogRollingFileSink::WriteLine(int dbgLevel, char *hdr, char *string) {
