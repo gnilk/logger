@@ -2,21 +2,12 @@
 File    :	Logger.cpp
 Author  :   
 Orginal :	
-Descr   :	Debug logger - modified to suit Arduino type systems
+Descr   :	Debug logger....
 
 --------------------------------------------------------------------------- 
-Todo [-:undone,+:inprogress,!:done]:
 
- THIS VERSION DIFFERS FROM OTHERS (this one is ahead).
- - Multithread safe
- - Logger Prefix support
- - Arduino Serial Sink support
-
-Changes: 
-
--- Date -- | -- Name ------- | -- Did what...                              
-2020-04-01 | Gnilk           | Added module prefix support, when multiple instances of same class wants to write
-2018-09-18 | Gnilk           | Imported and modified to work with Arduino (ESP32)
+ *** NOTE: This should be rewritten - it was started a very long time ago - and is completely outdated
+           It works 'fine' for your basic needs but can break quite hard if your try anything fancy (Add/Remove sinks for instance)
 
 ---------------------------------------------------------------------------*/
 
@@ -28,6 +19,8 @@ Changes:
 #include <map>
 #include <vector>
 #include <string>
+#include <memory>
+#include <utility>
 
 #ifdef WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -167,6 +160,7 @@ namespace gnilk
 		virtual int WriteLine(int dbgLevel, char *hdr, char *string) = 0;
 		virtual void Flush() = 0;
 		virtual void Close() = 0;
+		virtual LogProperties *GetProperties() = 0;
 	};
 	class LogBaseSink : public ILogOutputSink
 	{
@@ -175,7 +169,7 @@ namespace gnilk
 		LogProperties properties;
 		__inline bool WithinRange(int iDbgLevel) { return (iDbgLevel>=properties.GetDebugLevel())?true:false; }
 	public:	
-		LogProperties *GetProperties() { return &properties; }
+		LogProperties *GetProperties() override { return &properties; }
 	public:
 		virtual ~LogBaseSink() {}
 		void SetName(const char *newName) { properties.SetName(newName); }
@@ -189,6 +183,7 @@ namespace gnilk
 	class LogConsoleSink : 	public LogBaseSink
 	{
 	public:
+		virtual ~LogConsoleSink();
 		void Initialize(int argc, const char **argv) override;
 		int WriteLine(int dbgLevel, char *hdr, char *string) override;
 		void Close() override;
@@ -260,7 +255,7 @@ namespace gnilk
 
 
 	typedef std::list<LoggerInstance *> ILoggerList;
-	typedef std::list<ILogOutputSink *>ILoggerSinkList;
+	typedef std::list<std::unique_ptr<ILogOutputSink>>ILoggerSinkList;
 
 	class MsgBuffer;	// defined in logger_internal.h
 
@@ -362,7 +357,7 @@ namespace gnilk
 		static ILogger *GetLoggerFromNameWithPrefix(const char *name, const char *prefix);
 
 		// Create properties
-    private:
+    public:
         static TimeFormat kTimeFormat;
         static bool bInitialized;
         static int iIndentStep;

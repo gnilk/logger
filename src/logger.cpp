@@ -180,7 +180,9 @@ ILogOutputSink * LOG_CALLCONV LogSerialSink::CreateInstance() {
 ILogOutputSink *LogConsoleSink::CreateInstance() {
     return (ILogOutputSink *) (new LogConsoleSink());
 }
-
+LogConsoleSink::~LogConsoleSink() {
+    int breakme = 1;
+}
 void LogConsoleSink::Initialize(int argc, const char **argv) {
     // Do stuff here
     int i;
@@ -235,6 +237,7 @@ void LogFileSink::ParseArgs(int argc, const char **argv) {
 void LogFileSink::Initialize(int argc, const char **argv) {
     ParseArgs(argc, argv);
     Open(properties.GetLogfileName(), false);
+    SetName("LogFileSink");
 }
 long LogFileSink::Size() {
     if (fOut != NULL) {
@@ -417,11 +420,9 @@ Logger::TimeFormat Logger::kTimeFormat = kTFLog4Net;
 LogProperties Logger::properties;
 
 void Logger::SendToSinks(int dbgLevel, char *hdr, char *string) {
-    ILogOutputSink *pSink = NULL;
-    ILoggerSinkList::iterator it;
-    it = sinks.begin();
+    auto it = sinks.begin();
     while (it != sinks.end()) {
-        pSink = (ILogOutputSink *) *it;
+        auto &pSink = *it;
         pSink->WriteLine(dbgLevel, hdr, string);
         it++;
     }
@@ -681,32 +682,27 @@ ILogger *Logger::GetLogger(const char *name, const char *prefix /* = NULL */) {
 }
 
 void Logger::CloseAll() {
-    ILogOutputSink *pSink;
-    ILoggerSinkList::iterator it;
     Initialize();
 
-    it = sinks.begin();
+    auto it = sinks.begin();
     while (it != sinks.end()) {
-        pSink = (ILogOutputSink *) *it;
+        auto &pSink = *it;
         pSink->Close();
-        delete pSink;
         it++;
     }
 
     sinks.clear();
     loggers.clear();
-
 }
 
 void Logger::SetAllSinkDebugLevel(int iNewDebugLevel) {
     // This might very well be the first call, make sure we are initalized
     Initialize();
 
-    LogBaseSink *pSink = NULL;
     ILoggerSinkList::iterator it;
     it = sinks.begin();
     while (it != sinks.end()) {
-        pSink = (LogBaseSink *) *it;
+        auto &pSink = *it;
         pSink->GetProperties()->SetDebugLevel(iNewDebugLevel);
         it++;
     }
@@ -721,7 +717,7 @@ void Logger::AddSink(ILogOutputSink *pSink, const char *sName) {
 
     LogBaseSink *pBase = (LogBaseSink *) pSink;
     pBase->SetName(sName);
-    sinks.push_back(pSink);
+    sinks.push_back(std::unique_ptr<ILogOutputSink>(pSink));
 }
 // With initialization
 void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, const char **argv) {
@@ -730,14 +726,17 @@ void Logger::AddSink(ILogOutputSink *pSink, const char *sName, int argc, const c
 }
 
 bool Logger::RemoveSink(const char *sName) {
-    auto cbCheckSink = [sName](ILogOutputSink *sink) -> bool {
+    auto cbCheckSink = [sName](std::unique_ptr<ILogOutputSink> &sink) -> bool {
         if (!strcmp(sName, sink->GetName())) {
             return true;
         }
         return false;
     };
     auto szBefore = sinks.size();
-    sinks.erase(std::remove_if(sinks.begin(), sinks.end(), cbCheckSink));
+    auto it = std::remove_if(sinks.begin(), sinks.end(), cbCheckSink);
+    if (it != sinks.end()) {
+       sinks.erase(it);
+    }
     return (szBefore != sinks.size());
 }
 
@@ -783,34 +782,34 @@ void Logger::RebuildSinksFromConfiguration() {
                 }
                 // 2) Call initialize and attach
                 pSink->Initialize(0, NULL);
-                sinks.push_back(pSink);
+                sinks.push_back(std::unique_ptr<ILogOutputSink>(pSink));
             }
         }
     }
 }
 
 void Logger::Initialize() {
-    if (!Logger::bInitialized) {
-        // Initialize the rest
-#if defined(DEBUG) || defined(_DEBUG)
-        ILogOutputSink *pSink = (ILogOutputSink *) new LogConsoleSink();
-        AddSink(pSink, "console", 0, NULL);
-#endif
-        Logger::bInitialized = true;
-        properties.SetDebugLevel(DEFAULT_DEBUG_LEVEL);
-        properties.SetName("Logger");
-
-        // HACK
-        properties.ReadFromFile("logger.res");
-        char appenders[256];
-        properties.GetValue("sinks", appenders, 256, "");
-        if (strcmp(appenders, "")) {
-            RebuildSinksFromConfiguration();
-        }
-#ifdef WIN32
-        InitializeCriticalSection(&bufferLock);
-#endif
+    if (Logger::bInitialized) {
+        return;
     }
+#if defined(DEBUG) || defined(_DEBUG)
+    ILogOutputSink *pSink = (ILogOutputSink *) new LogConsoleSink();
+    AddSink(pSink, "console", 0, NULL);
+#endif
+    Logger::bInitialized = true;
+    properties.SetDebugLevel(DEFAULT_DEBUG_LEVEL);
+    properties.SetName("Logger");
+
+    // HACK
+    properties.ReadFromFile("logger.res");
+    char appenders[256];
+    properties.GetValue("sinks", appenders, 256, "");
+    if (strcmp(appenders, "")) {
+        RebuildSinksFromConfiguration();
+    }
+#ifdef WIN32
+    InitializeCriticalSection(&bufferLock);
+#endif
 }
 
 // Regular functions
