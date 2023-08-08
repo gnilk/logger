@@ -357,7 +357,7 @@ namespace gnilk
 		static ILogger *GetLoggerFromNameWithPrefix(const char *name, const char *prefix);
 
 		// Create properties
-    public:
+    private:
         static TimeFormat kTimeFormat;
         static bool bInitialized;
         static int iIndentStep;
