@@ -810,6 +810,10 @@ void Logger::Initialize() {
 #ifdef WIN32
     InitializeCriticalSection(&bufferLock);
 #endif
+#ifdef LOGGER_HAVE_PTHREADS
+    pthread_mutex_init(&bufferLock, NULL);
+#endif
+
 }
 
 // Regular functions
