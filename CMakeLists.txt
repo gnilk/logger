@@ -1,14 +1,18 @@
 #
-# CMAKE file for PUCKO - this will create a platform agnostic build
 # Mainly for running tests
 # NOTE: Not everything get's compiled and the platform stuff is just a mock
 #
 
+project(Logger C CXX)
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "")
 set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 cmake_minimum_required(VERSION 3.10)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 
 option(LOGGER_HAVE_NEWLINE "Append newline to strings" ON)
@@ -61,18 +65,17 @@ endif()
 
 set_property(TARGET logger PROPERTY CXX_STANDARD 11)
 
+#
+# Unit test version
+#
+list(APPEND src_utests src/utests/test_logger.cpp)
+add_library(loggerutest SHARED ${src_logger} ${src_utests})
+target_include_directories(loggerutest PUBLIC ./src)
+target_link_libraries(loggerutest)
 
 
 
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /usr/local/lib)
-# find_library(COCOA_FRAMEWORK Cocoa)
-# find_library(IOKIT_FRAMEWORK IOKit)
-# find_library(CORE_FRAMEWORK CoreFoundation)
-
-# message(STATUS ${COCOA_FRAMEWORK})
-# message(STATUS ${IOKIT_FRAMEWORK})
-# message(STATUS ${CORE_FRAMEWORK})
-# message(STATUS ${CMAKE_OSX_ARCHITECTURES})
 
 
 add_executable(logtest main.cpp)
